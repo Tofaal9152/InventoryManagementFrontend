@@ -89,11 +89,13 @@ function renderDrawerCell(drawer) {
 
   return `
     <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${escapeHtml(tooltip.replaceAll('\n', ', '))}" title="${escapeHtml(tooltip)}">
-      <span class="drawer-cell__top">
-        <span class="drawer-cell__code">${drawer.code}</span>
-        <span class="drawer-cell__signal" aria-hidden="true"></span>
+      <span class="drawer-cell__front">
+        <span class="drawer-cell__top">
+          <span class="drawer-cell__code">${drawer.code}</span>
+        </span>
+        <span class="drawer-cell__pull" aria-hidden="true"></span>
+        <span class="drawer-cell__label">${drawer.stockLabel}</span>
       </span>
-      <span class="drawer-cell__label">${drawer.stockLabel}</span>
     </button>
   `;
 }
@@ -346,14 +348,12 @@ export async function renderInventoryPage(container, { preserveSelection = false
       </aside>
       <section class="cabinet-stage" aria-labelledby="inventory-cabinet-title">
         <header class="inventory-heading">
-          <div>
+          <div class="inventory-heading__summary">
             <h2 id="inventory-cabinet-title" class="inventory-heading__title"></h2>
             <p class="inventory-heading__meta"></p>
           </div>
-          <div class="inventory-heading__controls">
-            <div class="inventory-filters" aria-label="Drawer filters"></div>
-            <div class="drawer-view-toggle-container"></div>
-          </div>
+          <div class="drawer-view-toggle-container"></div>
+          <div class="inventory-filters" aria-label="Drawer filters"></div>
         </header>
         <div class="drawer-view"></div>
       </section>

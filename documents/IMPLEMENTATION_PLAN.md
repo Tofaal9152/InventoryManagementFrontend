@@ -419,6 +419,12 @@ Recommended next: Step N+1 - [step name]
 - **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
 - **Decisions:** The Grid view now prioritizes the physical drawer location: each tile shows only its code and a small colour state marker. Hovering shows a native lightweight tooltip with the full component, part number, quantity, section count and note, so no component names are shortened with ellipses. Click still selects the drawer and updates the details panel.
 
+#### 2026-09-09 - Physical drawer map styling
+
+- **Changed:** `js/pages/inventory-page.js`, `css/pages/inventory.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** Drawer tiles now use a lightweight 2D cabinet-face treatment inspired by a real steel drawer: a panel bevel, compact circular pull and a subtle stock-state accent. This is rendered entirely in CSS; it does not use images, canvas, WebGL or animation-heavy effects.
+
 ## 12. Performance Rules
 
 - Use CSS Grid/Flexbox, native browser controls and small SVG icons.
