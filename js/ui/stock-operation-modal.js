@@ -20,7 +20,7 @@ const operationLabels = {
   transfer: 'Transfer stock'
 };
 
-function field(label, name, { type = 'text', value = '', min = '', step = '', required = false, placeholder = '' } = {}) {
+function field(label, name, { type = 'text', value = '', min = '', step = '', required = false, placeholder = '', wide = false } = {}) {
   const controlId = `stock-operation-${name}`;
   const attributes = [
     `id="${controlId}"`,
@@ -35,7 +35,7 @@ function field(label, name, { type = 'text', value = '', min = '', step = '', re
   ].filter(Boolean).join(' ');
 
   return `
-    <div class="field">
+    <div class="field${wide ? ' field--wide' : ''}">
       <label class="field__label" for="${controlId}">${label}${required ? '' : ' (optional)'}</label>
       <input class="field__control" ${attributes}>
       <span class="field__error" id="${controlId}-error"></span>
@@ -91,7 +91,8 @@ function operationFields(operation, cabinet, drawer, projects) {
   const quantity = field(`Quantity (${drawer.unit.symbol})`, 'quantity', { type: 'number', value: '1', min: '0.001', step: '0.001', required: true });
 
   if (operation === 'add') {
-    return `<div class="stock-operation-form__grid">${quantity}${field('Unit price (BDT)', 'unitPrice', { type: 'number', min: '0', step: '0.01' })}${field('Delivery charge (BDT)', 'deliveryCharge', { type: 'number', min: '0', step: '0.01' })}${noteField(false)}</div>`;
+    const addQuantity = field(`Quantity (${drawer.unit.symbol})`, 'quantity', { type: 'number', value: '1', min: '0.001', step: '0.001', required: true, wide: true });
+    return `<div class="stock-operation-form__grid">${addQuantity}${noteField(false)}</div>`;
   }
   if (operation === 'take') {
     return `<div class="stock-operation-form__grid">${quantity}${projectField(projects)}${noteField(false)}</div>`;

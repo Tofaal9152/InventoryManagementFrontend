@@ -17,6 +17,7 @@ let workspace;
 let selectedCabinetId;
 let selectedDrawerId;
 let activeFilter = 'all';
+let drawerViewMode = 'grid';
 let unsubscribeFromInventory;
 let inventoryEventController;
 
@@ -71,31 +72,74 @@ function renderFilterButtons(cabinet) {
 
 function renderDrawerCell(drawer) {
   const isSelected = drawer.id === selectedDrawerId;
-  const componentName = drawer.component ? escapeHtml(drawer.component.name) : 'Available drawer';
-  const quantity = drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : 'Ready to assign';
+  const componentName = drawer.component ? drawer.component.name : 'Empty drawer';
+  const componentDetail = drawer.component
+    ? drawer.component.partNumber || 'No part number'
+    : 'Ready to assign from Library';
+  const quantity = drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : 'No stock assigned';
+  const tooltip = [
+    `Drawer ${drawer.code}`,
+    `State: ${drawer.stockLabel}`,
+    `Component: ${componentName}`,
+    componentDetail,
+    `Quantity: ${quantity}`,
+    `Sections: ${drawer.sectionCount}`,
+    drawer.note ? `Note: ${drawer.note}` : ''
+  ].filter(Boolean).join('\n');
 
   return `
-    <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${drawer.code}, ${drawer.stockLabel}${drawer.component ? `, ${drawer.component.name}` : ''}">
+    <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${escapeHtml(tooltip.replaceAll('\n', ', '))}" title="${escapeHtml(tooltip)}">
       <span class="drawer-cell__top">
         <span class="drawer-cell__code">${drawer.code}</span>
-        <span class="drawer-cell__state">${drawer.stockLabel}</span>
+        <span class="drawer-cell__signal" aria-hidden="true"></span>
       </span>
-      <span class="drawer-cell__component">${componentName}</span>
-      <span class="drawer-cell__quantity">${quantity}</span>
+      <span class="drawer-cell__label">${drawer.stockLabel}</span>
     </button>
   `;
 }
 
 function renderDrawerGrid(cabinet) {
-  const drawers = activeFilter === 'all'
-    ? cabinet.drawers
-    : cabinet.drawers.filter((drawer) => drawer.stockState === activeFilter);
+  const drawers = getVisibleDrawers(cabinet);
 
   if (!drawers.length) {
     return '<p class="cabinet-grid__empty">No drawers match this filter.</p>';
   }
 
   return drawers.map(renderDrawerCell).join('');
+}
+
+function getVisibleDrawers(cabinet) {
+  return activeFilter === 'all'
+    ? cabinet.drawers
+    : cabinet.drawers.filter((drawer) => drawer.stockState === activeFilter);
+}
+
+function renderDrawerTable(cabinet) {
+  const drawers = getVisibleDrawers(cabinet);
+  const rows = drawers.length ? drawers.map((drawer) => `
+    <tr class="${drawer.id === selectedDrawerId ? 'is-selected' : ''}">
+      <td><button class="drawer-table__code" type="button" data-drawer-id="${drawer.id}" aria-pressed="${drawer.id === selectedDrawerId}">${drawer.code}</button></td>
+      <td><strong>${drawer.component ? escapeHtml(drawer.component.name) : 'Available drawer'}</strong><span class="table-secondary">${drawer.component ? escapeHtml(drawer.component.partNumber || 'No part number') : 'No component assigned'}</span></td>
+      <td>${drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : '—'}</td>
+      <td><span class="status-badge status-badge--${drawer.stockState === 'stocked' ? 'success' : drawer.stockState === 'low' ? 'warning' : drawer.stockState === 'out' ? 'danger' : 'neutral'}">${drawer.stockLabel}</span></td>
+      <td>${drawer.sectionCount}</td>
+      <td>${escapeHtml(drawer.note || '—')}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="6">No drawers match this filter.</td></tr>';
+
+  return `<div class="drawer-table-wrap"><table class="drawer-table"><thead><tr><th>Drawer</th><th>Component</th><th>Quantity</th><th>State</th><th>Sections</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderDrawerView(cabinet) {
+  if (drawerViewMode === 'table') {
+    return renderDrawerTable(cabinet);
+  }
+
+  return `<div class="cabinet-grid-scroll" tabindex="0" aria-label="Scrollable cabinet drawer grid"><div class="cabinet-grid cabinet-grid--${cabinet.columns.length}" aria-label="Cabinet drawers">${renderDrawerGrid(cabinet)}</div></div>`;
+}
+
+function renderViewToggle() {
+  return `<div class="drawer-view-toggle" aria-label="Drawer view mode"><button type="button" class="drawer-view-toggle__button ${drawerViewMode === 'grid' ? 'is-active' : ''}" data-drawer-view="grid" aria-pressed="${drawerViewMode === 'grid'}">Grid view</button><button type="button" class="drawer-view-toggle__button ${drawerViewMode === 'table' ? 'is-active' : ''}" data-drawer-view="table" aria-pressed="${drawerViewMode === 'table'}">Table view</button></div>`;
 }
 
 function renderDrawerDetails(drawer, cabinet) {
@@ -180,6 +224,9 @@ function updateSelection(container) {
     button.classList.toggle('is-selected', isSelected);
     button.setAttribute('aria-pressed', String(isSelected));
   });
+  container.querySelectorAll('.drawer-table tbody tr').forEach((row) => {
+    row.classList.toggle('is-selected', row.querySelector('[data-drawer-id]')?.dataset.drawerId === drawer.id);
+  });
   container.querySelector('.drawer-panel').innerHTML = renderDrawerDetails(drawer, cabinet);
 }
 
@@ -196,10 +243,8 @@ function updateCabinetWorkspace(container) {
   container.querySelector('.inventory-heading__title').textContent = cabinet.name;
   container.querySelector('.inventory-heading__meta').textContent = `${cabinet.drawerCount} drawers · ${cabinet.rows} rows · ${cabinet.columns.length} columns`;
   container.querySelector('.inventory-filters').innerHTML = renderFilterButtons(cabinet);
-
-  const grid = container.querySelector('.cabinet-grid');
-  grid.className = `cabinet-grid cabinet-grid--${cabinet.columns.length}`;
-  grid.innerHTML = renderDrawerGrid(cabinet);
+  container.querySelector('.drawer-view-toggle-container').innerHTML = renderViewToggle();
+  container.querySelector('.drawer-view').innerHTML = renderDrawerView(cabinet);
   updateSelection(container);
 }
 
@@ -208,6 +253,7 @@ function bindInventoryEvents(container) {
   container.addEventListener('click', async (event) => {
     const drawerButton = event.target.closest('[data-drawer-id]');
     const filterButton = event.target.closest('[data-inventory-filter]');
+    const viewButton = event.target.closest('[data-drawer-view]');
     const cabinetButton = event.target.closest('[data-cabinet-id]');
     const createCabinetButton = event.target.closest('[data-create-cabinet]');
     const createComponentButton = event.target.closest('[data-create-library-component]');
@@ -221,6 +267,11 @@ function bindInventoryEvents(container) {
     }
     if (filterButton) {
       activeFilter = filterButton.dataset.inventoryFilter;
+      updateCabinetWorkspace(container);
+      return;
+    }
+    if (viewButton) {
+      drawerViewMode = viewButton.dataset.drawerView;
       updateCabinetWorkspace(container);
       return;
     }
@@ -299,11 +350,12 @@ export async function renderInventoryPage(container, { preserveSelection = false
             <h2 id="inventory-cabinet-title" class="inventory-heading__title"></h2>
             <p class="inventory-heading__meta"></p>
           </div>
-          <div class="inventory-filters" aria-label="Drawer filters"></div>
+          <div class="inventory-heading__controls">
+            <div class="inventory-filters" aria-label="Drawer filters"></div>
+            <div class="drawer-view-toggle-container"></div>
+          </div>
         </header>
-        <div class="cabinet-grid-scroll" tabindex="0" aria-label="Scrollable cabinet drawer grid">
-          <div class="cabinet-grid" aria-label="Cabinet drawers"></div>
-        </div>
+        <div class="drawer-view"></div>
       </section>
       <aside class="drawer-panel" aria-live="polite"></aside>
     </section>
@@ -327,4 +379,5 @@ export function destroyInventoryPage() {
   selectedCabinetId = undefined;
   selectedDrawerId = undefined;
   activeFilter = 'all';
+  drawerViewMode = 'grid';
 }

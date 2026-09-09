@@ -7,11 +7,11 @@ export const APP_CONFIG = Object.freeze({
 export const NAVIGATION = Object.freeze([
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/library', label: 'Library' },
-  { path: '/inventory', label: 'Inventory' },
+  { path: '/inventory', label: 'Drawer' },
   { path: '/projects', label: 'Projects' },
   { path: '/requisitions', label: 'Requisitions' },
   { path: '/reports', label: 'Reports' },
-  { path: '/settings/cabinets', label: 'Administration' },
+  { path: '/settings/cabinets', label: 'Settings' },
   { path: '/audit-log', label: 'Audit log' }
 ]);
 

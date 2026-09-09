@@ -407,6 +407,18 @@ Recommended next: Step N+1 - [step name]
 - **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
 - **Decisions:** Cabinets with up to four columns retain the responsive fitted grid. Cabinets with five or more columns preserve readable drawer-card widths and scroll horizontally inside the drawer-map container only.
 
+#### 2026-09-09 - Drawer table view
+
+- **Changed:** `js/pages/inventory-page.js`, `css/pages/inventory.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** Inventory now offers Grid view for fast spatial selection and Table view for a complete, scannable drawer list. Selecting a drawer code in the table updates the same detail panel and stock actions. Drawer-card state labels now truncate safely instead of overlapping the drawer code.
+
+#### 2026-09-09 - Drawer map visual refinement
+
+- **Changed:** `js/pages/inventory-page.js`, `css/pages/inventory.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** The Grid view now prioritizes the physical drawer location: each tile shows only its code and a small colour state marker. Hovering shows a native lightweight tooltip with the full component, part number, quantity, section count and note, so no component names are shortened with ellipses. Click still selects the drawer and updates the details panel.
+
 ## 12. Performance Rules
 
 - Use CSS Grid/Flexbox, native browser controls and small SVG icons.
