@@ -1,0 +1,183 @@
+.requisitions-page,
+.requisition-details-page,
+.administration-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.requisition-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.requisition-toolbar .field {
+  min-width: 11rem;
+}
+
+.requisition-form-grid,
+.cabinet-config-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.requisition-detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.requisition-details-grid,
+.administration-cabinet-grid,
+.administration-placeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 0.8fr) 1.2fr;
+  gap: 0.75rem;
+}
+
+.detail-list dt,
+.administration-caption {
+  color: var(--color-text-muted);
+}
+
+.detail-list dd {
+  margin: 0;
+}
+
+.status-history {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.status-history li {
+  display: grid;
+  gap: 0.125rem;
+  padding-left: 0.875rem;
+  border-left: 2px solid #93b6e4;
+}
+
+.status-history span {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.administration-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.administration-nav a {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.administration-nav a[aria-current="page"] {
+  background: #e7f0fd;
+  color: var(--color-primary-strong);
+}
+
+.administration-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.administration-role-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.cabinet-config-form {
+  margin-top: 1rem;
+}
+
+.cabinet-config-form .button {
+  grid-column: 1 / -1;
+}
+
+.administration-placeholder-grid article {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.administration-placeholder-grid p {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.administration-placeholder-grid .button {
+  justify-self: start;
+}
+
+@media (max-width: 48rem) {
+  .requisition-details-grid,
+  .administration-cabinet-grid,
+  .administration-placeholder-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 36rem) {
+  .overview-header,
+  .requisition-detail-actions {
+    justify-items: start;
+    justify-content: flex-start;
+  }
+
+  .requisition-toolbar {
+    justify-content: stretch;
+  }
+
+  .requisition-toolbar .field {
+    width: 100%;
+  }
+
+  .requisition-form-grid,
+  .cabinet-config-form {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide,
+  .cabinet-config-form .button {
+    grid-column: auto;
+  }
+
+  .detail-list div {
+    grid-template-columns: 1fr;
+    gap: 0.125rem;
+  }
+}

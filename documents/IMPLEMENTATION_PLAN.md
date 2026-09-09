@@ -293,14 +293,14 @@ Work is intentionally paused between steps. The user will explicitly request the
 
 | Step | Status | Completed on | Files changed | Verification | Next step |
 | --- | --- | --- | --- | --- | --- |
-| 1. Foundation and app shell | Not started | - | - | - | Start only after the user says `next step` |
-| 2. Reusable UI and demo foundation | Not started | - | - | - | - |
-| 3. Inventory cabinet view | Not started | - | - | - | - |
-| 4. Library and drawer assignment | Not started | - | - | - | - |
-| 5. Stock operations and movement ledger | Not started | - | - | - | - |
-| 6. Projects, dashboard and reports | Not started | - | - | - | - |
-| 7. Requisitions, administration and audit UI | Not started | - | - | - | - |
-| 8. Quality, documentation and API handoff | Not started | - | - | - | - |
+| 1. Foundation and app shell | Completed | 2026-09-09 | `index.html`, `package.json`, `server.js`, `css/base.css`, `css/layout.css`, `css/components.css`, `js/config.js`, `js/router.js`, `js/app.js` | Local server returned HTTP 200 for `/dashboard`, `/inventory`, fallback route and static CSS/JS; `node --check` passed | Step 2 - Reusable UI and demo foundation |
+| 2. Reusable UI and demo foundation | Completed | 2026-09-09 | `css/components.css`, `js/app.js`, `js/data/demo-data.js`, `js/data/demo-store.js`, `js/services/*.js`, `js/ui/*.js`, `js/utils/*.js` | Demo store, service boundary and validation checks passed; clean routes and new static modules returned HTTP 200 | Step 3 - Inventory cabinet view |
+| 3. Inventory cabinet view | Completed | 2026-09-09 | `index.html`, `css/pages/inventory.css`, `js/app.js`, `js/pages/inventory-page.js`, `js/services/inventory-service.js`, `js/utils/dom.js` | Syntax checks passed; 16-drawer workspace/grouping and all four stock states verified; inventory route/modules returned HTTP 200 | Step 4 - Library and drawer assignment |
+| 4. Library and drawer assignment | Completed | 2026-09-09 | `index.html`, `css/pages/library.css`, `js/app.js`, `js/router.js`, `js/pages/library-page.js`, `js/pages/inventory-page.js`, `js/services/component-service.js`, `js/services/inventory-service.js`, `js/ui/assign-component-modal.js`, `js/utils/dom.js`, `js/utils/validation.js` | Syntax checks passed; filters, MPN validation, component creation/detail, drawer assignment and occupied-drawer rejection verified | Step 5 - Stock operations and movement ledger |
+| 5. Stock operations and movement ledger | Completed | 2026-09-09 | `index.html`, `css/pages/inventory.css`, `css/pages/stock-operations.css`, `js/pages/inventory-page.js`, `js/services/inventory-service.js`, `js/ui/stock-operation-modal.js` | Syntax and stock-rule checks passed; route and action modules returned HTTP 200 | Step 6 - Projects, dashboard and reports |
+| 6. Projects, dashboard and reports | Completed | 2026-09-09 | `index.html`, `css/pages/overview.css`, `js/app.js`, `js/router.js`, `js/pages/dashboard-page.js`, `js/pages/projects-page.js`, `js/pages/reports-page.js`, `js/services/project-service.js`, `js/services/report-service.js` | Syntax and service checks passed; direct dashboard, project, report and static-asset requests returned HTTP 200 | Step 7 - Requisitions, administration and audit UI |
+| 7. Requisitions, administration and audit UI | Completed | 2026-09-09 | `index.html`, `css/pages/administration.css`, `css/pages/overview.css`, `js/app.js`, `js/config.js`, `js/router.js`, `js/data/demo-data.js`, `js/data/demo-store.js`, `js/pages/dashboard-page.js`, `js/pages/requisitions-page.js`, `js/pages/administration-page.js`, `js/services/requisition-service.js`, `js/services/administration-service.js`, `js/services/report-service.js` | Syntax and demo workflow checks passed; direct requisition, administration, audit and static-asset requests returned HTTP 200 | Step 8 - Quality, documentation and API handoff |
+| 8. Quality, documentation and API handoff | Completed | 2026-09-09 | `package.json`, `js/api/client.js`, `tests/demo-workflow.mjs`, `documents/API_HANDOFF.md`, `documents/QUALITY_CHECKLIST.md` | Full JavaScript syntax sweep and automated demo workflow passed; all application routes and new assets returned HTTP 200 | Backend implementation and target-device browser QA |
 
 ### Required update format after a completed step
 
@@ -312,6 +312,64 @@ Verified: [commands/checks and result]
 Notes: [important design or API decisions]
 Recommended next: Step N+1 - [step name]
 ```
+
+### Completed step records
+
+#### 2026-09-09 - Step 1: Foundation and app shell
+
+- **Changed:** `index.html`, `package.json`, `server.js`, `css/base.css`, `css/layout.css`, `css/components.css`, `js/config.js`, `js/router.js`, `js/app.js`.
+- **Verified:** The lightweight local server returned HTTP 200 for direct `/dashboard` and `/inventory` routes, an unknown route fallback, and static JavaScript/CSS assets. JavaScript syntax checks passed for `server.js`, `js/router.js`, and `js/app.js`.
+- **Decisions:** Clean browser paths use History API navigation. `server.js` uses Node built-ins only and returns `index.html` for non-file routes, so refresh/direct links work in demo mode. The app shell uses system fonts, custom CSS, no external dependency, and responsive sidebar navigation.
+- **Recommended next:** Step 2 - Reusable UI and demo foundation.
+
+#### 2026-09-09 - Step 2: Reusable UI and demo foundation
+
+- **Changed:** `css/components.css`, `js/app.js`, `js/data/demo-data.js`, `js/data/demo-store.js`, `js/services/component-service.js`, `js/services/inventory-service.js`, `js/services/project-service.js`, `js/services/demo-session-service.js`, `js/ui/toast.js`, `js/ui/modal.js`, `js/ui/confirm-dialog.js`, `js/ui/form-fields.js`, `js/ui/status-badge.js`, `js/ui/states.js`, `js/utils/formatters.js`, `js/utils/validation.js`.
+- **Verified:** Syntax checks passed. A standalone check confirmed the seeded component/cabinet/project records, active-project filtering, component stock aggregation, validation rules, local demo updates and reset behaviour. The local server returned HTTP 200 for direct routes and the new UI/data modules.
+- **Decisions:** Demo state is seeded once and persisted per browser in `localStorage`; Reset Demo Data restores the known starting state. Pages interact only with service modules. Services are already separated from the demo store and can switch to API adapters later without rewriting UI pages.
+- **Recommended next:** Step 3 - Inventory cabinet view.
+
+#### 2026-09-09 - Step 3: Inventory cabinet view
+
+- **Changed:** `index.html`, `css/pages/inventory.css`, `js/app.js`, `js/pages/inventory-page.js`, `js/services/inventory-service.js`, `js/utils/dom.js`.
+- **Verified:** Syntax checks passed. The demo workspace check confirmed one grouped cabinet with 16 drawers and the required states: `A1` in stock, `B1` low stock, `C1` out of stock and `D1` empty. The local server returned HTTP 200 for `/inventory`, the inventory stylesheet and new page/service modules.
+- **Decisions:** Inventory uses a CSS Grid 2D map and native buttons for keyboard selection. Selecting a drawer updates only its selected/open-left state and the right-side panel. Stock state is calculated from the component's total quantity, except a zero-quantity assigned drawer which always shows out of stock, matching the SRS. The right panel shows the selected component/location now; stock movement controls are intentionally deferred to Step 5.
+- **Recommended next:** Step 4 - Library and drawer assignment.
+
+#### 2026-09-09 - Step 4: Library and drawer assignment
+
+- **Changed:** `index.html`, `css/pages/library.css`, `js/app.js`, `js/router.js`, `js/pages/library-page.js`, `js/pages/inventory-page.js`, `js/services/component-service.js`, `js/services/inventory-service.js`, `js/ui/assign-component-modal.js`, `js/utils/dom.js`, `js/utils/validation.js`.
+- **Verified:** Syntax checks passed. Service checks confirmed Library low-stock and location search filters, duplicate MPN rejection, component creation, component detail locations/history, drawer assignment and rejection of a different component in an occupied drawer. Direct `/library` and `/library/component-lm358` routes, Inventory, and all new static modules returned HTTP 200.
+- **Decisions:** The Library is now the master source for drawer assignment. Assignment requires a selected Library component and a positive initial quantity; it validates the component's fractional-unit rule and records an initial immutable Add movement, so the data remains consistent before the full movement UI is added. Detail paths use clean `/library/:id` routes and dynamic routing highlights Library navigation correctly.
+- **Recommended next:** Step 5 - Stock operations and movement ledger.
+
+#### 2026-09-09 - Step 5: Stock operations and movement ledger
+
+- **Changed:** `index.html`, `css/pages/inventory.css`, `css/pages/stock-operations.css`, `js/pages/inventory-page.js`, `js/services/inventory-service.js`, `js/ui/stock-operation-modal.js`.
+- **Verified:** Syntax checks passed. Service checks covered Add, Take with an active Project, Return, Transfer to an empty drawer, immutable movement creation, over-take rejection, fractional quantity rejection for `pcs`, mixed-component transfer rejection and the mandatory Return note. The local server returned HTTP 200 for the Inventory route and action modules.
+- **Decisions:** The drawer panel now exposes Add, Take, Return and Transfer actions plus its recent activity. Each mutation writes a new immutable movement with source/destination, component, quantity, user, project where applicable, note and timestamp. Take permits an optional active Project only; zero-quantity assigned drawers remain retained and show Out of stock.
+- **Recommended next:** Step 6 - Projects, dashboard and reports.
+
+#### 2026-09-09 - Step 6: Projects, dashboard and reports
+
+- **Changed:** `index.html`, `css/pages/overview.css`, `js/app.js`, `js/router.js`, `js/pages/dashboard-page.js`, `js/pages/projects-page.js`, `js/pages/reports-page.js`, `js/services/project-service.js`, `js/services/report-service.js`.
+- **Verified:** JavaScript syntax checks passed for the new pages, services, router and app entry. A service test reset the demo, recorded a Project-tagged Take, then confirmed dashboard data, project totals, project consumption and the reports movement list; it reset the demo again afterwards. The local server returned HTTP 200 for direct `/dashboard`, `/projects`, `/projects/project-steelguard` and `/reports` paths and the new stylesheet/page module.
+- **Decisions:** Dashboard counts and reports are derived from the same service-backed demo state as Inventory. Project consumption includes only Take movements tagged with that Project, and its estimated value uses the component's current last buying price. The reports movement table resolves source/destination drawer labels without exposing the store to pages.
+- **Recommended next:** Step 7 - Requisitions, administration and audit UI.
+
+#### 2026-09-09 - Step 7: Requisitions, administration and audit UI
+
+- **Changed:** `index.html`, `css/pages/administration.css`, `css/pages/overview.css`, `js/app.js`, `js/config.js`, `js/router.js`, `js/data/demo-data.js`, `js/data/demo-store.js`, `js/pages/dashboard-page.js`, `js/pages/requisitions-page.js`, `js/pages/administration-page.js`, `js/services/requisition-service.js`, `js/services/administration-service.js`, `js/services/report-service.js`.
+- **Verified:** JavaScript syntax checks passed. A demo workflow test created a free-text requisition, approved it, checked its immutable status history/list/dashboard pending count, read all administration references, safely reduced cabinet columns, rejected a dimension change that would remove assigned stock, and confirmed audit events; it reset demo data afterwards. The local server returned HTTP 200 for direct requisition/detail, administration, audit and new static-asset paths.
+- **Decisions:** Requisition status changes follow the SRS lifecycle (`Pending → Approved → Ordered → Received`, plus terminal `Rejected`/`Cancelled`); the current seeded Admin is the demo actor. Existing browser demo records are migrated in place to add requisitions and audit data. Category, unit and user/role pages are reference-management views in this frontend phase; import/export/label controls are clearly marked backend-ready placeholders. Cabinet resize is functional in demo mode and blocks any reduction that would remove an assigned drawer or stock.
+- **Recommended next:** Step 8 - Quality, documentation and API handoff.
+
+#### 2026-09-09 - Step 8: Quality, documentation and API handoff
+
+- **Changed:** `package.json`, `js/api/client.js`, `tests/demo-workflow.mjs`, `documents/API_HANDOFF.md`, `documents/QUALITY_CHECKLIST.md`.
+- **Verified:** `npm test` passed after a full JavaScript syntax sweep. The test covers seeded stock states; component, assignment and stock-operation validation; immutable stock movement effects; requisition validation and lifecycle; cabinet resize safety; project/report/dashboard/audit derivation; and API-client success/error mapping. A local-server smoke test returned HTTP 200 for every implemented application route, `js/api/client.js`, and both new handoff documents.
+- **Decisions:** The frontend remains in demo mode until Django endpoints exist. `apiRequest()` is the central future client for JSON, same-origin credentials, Django CSRF and structured errors; adapters will be introduced service-by-service so page contracts do not change. Automated checks are Node-based and do not substitute for visual testing on the target Raspberry Pi; the required device/browser checklist is recorded separately.
+- **Recommended next:** Implement the Django API contracts, then complete the documented target-device browser QA.
 
 ## 12. Performance Rules
 
