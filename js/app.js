@@ -5,15 +5,14 @@ import { confirmAction } from './ui/confirm-dialog.js';
 import { showToast } from './ui/toast.js';
 import { destroyInventoryPage, renderInventoryPage } from './pages/inventory-page.js';
 import { destroyLibraryPage, renderComponentDetailsPage, renderLibraryPage } from './pages/library-page.js';
-import { renderDashboardPage } from './pages/dashboard-page.js';
-import { renderProjectDetailsPage, renderProjectsPage } from './pages/projects-page.js';
+import { destroyDashboardPage, renderDashboardPage } from './pages/dashboard-page.js';
+import { destroyProjectsPage, renderProjectDetailsPage, renderProjectsPage } from './pages/projects-page.js';
 import { renderReportsPage } from './pages/reports-page.js';
 import { destroyRequisitionsPage, renderRequisitionDetailsPage, renderRequisitionsPage } from './pages/requisitions-page.js';
 import { destroyAdministrationPage, renderAdministrationPage, renderAuditLogPage } from './pages/administration-page.js';
 
 const routeView = document.querySelector('#route-view');
 const navigationRoot = document.querySelector('#primary-nav');
-const pageTitle = document.querySelector('#page-title');
 const appSidebar = document.querySelector('.app-sidebar');
 const menuToggle = document.querySelector('#menu-toggle');
 
@@ -113,10 +112,12 @@ async function renderRoute(route) {
 
   destroyInventoryPage();
   destroyLibraryPage();
+  destroyProjectsPage();
+  destroyDashboardPage();
   destroyRequisitionsPage();
   destroyAdministrationPage();
-  pageTitle.textContent = libraryDetailMatch ? 'Component details' : projectDetailMatch ? 'Project details' : requisitionDetailMatch ? 'Requisition details' : page?.title || navigationItem?.label || 'Page not found';
-  document.title = `${pageTitle.textContent} | ${APP_CONFIG.appName}`;
+  const routeTitle = libraryDetailMatch ? 'Component details' : projectDetailMatch ? 'Project details' : requisitionDetailMatch ? 'Requisition details' : page?.title || navigationItem?.label || 'Page not found';
+  document.title = `${routeTitle} | ${APP_CONFIG.appName}`;
   renderNavigation(navigationPath);
   closeNavigation();
 

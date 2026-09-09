@@ -7,11 +7,18 @@
 
 .requisition-toolbar {
   display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 0.75rem;
 }
 
 .requisition-toolbar .field {
   min-width: 11rem;
+}
+
+.requisition-toolbar .button {
+  min-height: 2.75rem;
 }
 
 .requisition-form-grid,
@@ -34,11 +41,17 @@
 }
 
 .requisition-details-grid,
-.administration-cabinet-grid,
 .administration-placeholder-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.administration-cabinet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  max-width: 52rem;
 }
 
 .detail-list {
@@ -106,6 +119,34 @@
   gap: 1rem;
 }
 
+.audit-toolbar {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1.65fr) repeat(4, minmax(8.5rem, 1fr)) max-content;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.audit-toolbar label,
+.audit-toolbar .field__control,
+.audit-search {
+  min-width: 0;
+  width: 100%;
+}
+
+.audit-toolbar .table-action {
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.audit-result-meta {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
 .administration-role-note {
   display: flex;
   flex-wrap: wrap;
@@ -117,11 +158,19 @@
 }
 
 .cabinet-config-form {
+  grid-template-columns: repeat(2, minmax(10rem, 1fr)) max-content;
+  align-items: end;
   margin-top: 1rem;
 }
 
 .cabinet-config-form .button {
-  grid-column: 1 / -1;
+  grid-column: auto;
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.administration-placeholder-grid {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
 }
 
 .administration-placeholder-grid article {
@@ -145,9 +194,20 @@
 
 @media (max-width: 48rem) {
   .requisition-details-grid,
-  .administration-cabinet-grid,
   .administration-placeholder-grid {
     grid-template-columns: 1fr;
+  }
+
+  .administration-cabinet-grid {
+    max-width: none;
+  }
+
+  .audit-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .audit-search {
+    grid-column: 1 / -1;
   }
 }
 
@@ -169,6 +229,18 @@
   .requisition-form-grid,
   .cabinet-config-form {
     grid-template-columns: 1fr;
+  }
+
+  .audit-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-search {
+    grid-column: auto;
+  }
+
+  .audit-toolbar .table-action {
+    width: 100%;
   }
 
   .field--wide,

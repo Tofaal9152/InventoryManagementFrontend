@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Components Inventory Management System">
-    <title>Stockroom | Components Inventory</title>
+    <title>Inventory | Components Inventory</title>
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/layout.css">
     <link rel="stylesheet" href="/css/components.css">
@@ -19,9 +19,9 @@
 
     <div class="app-shell">
       <aside class="app-sidebar" aria-label="Primary navigation">
-        <a class="brand" href="/dashboard" data-route-link aria-label="Stockroom dashboard">
+        <a class="brand" href="/dashboard" data-route-link aria-label="Inventory dashboard">
           <span>
-            <strong>Stockroom</strong>
+            <strong>Inventory</strong>
             <small>Component inventory</small>
           </span>
         </a>
@@ -35,22 +35,12 @@
         <nav id="primary-nav" class="primary-nav" aria-label="Application"></nav>
 
         <div class="sidebar-footer">
+          <strong>Admin · AH</strong>
           <span>Demo mode</span>
         </div>
       </aside>
 
       <div class="app-frame">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Workspace</p>
-            <h1 id="page-title">Dashboard</h1>
-          </div>
-          <div class="topbar-actions">
-            <span class="role-badge">Admin</span>
-            <button class="profile-button" type="button" aria-label="Open profile menu">AH</button>
-          </div>
-        </header>
-
         <main id="main-content" class="main-content" tabindex="-1">
           <div id="route-view"></div>
         </main>

@@ -124,6 +124,19 @@ function makeComponentId() {
   return `component-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function normaliseImage(image) {
+  if (!image || typeof image !== 'object' || !String(image.dataUrl || '').startsWith('data:image/')) {
+    return null;
+  }
+
+  return {
+    dataUrl: String(image.dataUrl),
+    name: String(image.name || 'component-image'),
+    type: String(image.type || ''),
+    size: Number(image.size) || 0
+  };
+}
+
 export async function saveComponent(input) {
   if (APP_CONFIG.mode !== 'demo') {
     throw new Error('Component API integration is not configured yet.');
@@ -138,6 +151,7 @@ export async function saveComponent(input) {
     description: String(input.description || '').trim(),
     manufacturer: String(input.manufacturer || '').trim(),
     datasheetUrl: String(input.datasheetUrl || '').trim(),
+    image: normaliseImage(input.image),
     lastBuyingPrice: Number(input.lastBuyingPrice || 0),
     deliveryCharge: Number(input.deliveryCharge || 0),
     minimumQuantity: Number(input.minimumQuantity || 0)

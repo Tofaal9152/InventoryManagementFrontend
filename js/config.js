@@ -1,7 +1,7 @@
 export const APP_CONFIG = Object.freeze({
   apiBaseUrl: '/api',
   mode: 'demo',
-  appName: 'Stockroom'
+  appName: 'Inventory Manager'
 });
 
 export const NAVIGATION = Object.freeze([

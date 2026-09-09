@@ -1,6 +1,6 @@
 import { createDemoState } from './demo-data.js';
 
-const STORAGE_KEY = 'stockroom-demo-state-v1';
+const STORAGE_KEY = 'inventory-demo-state-v1';
 const memoryStorage = new Map();
 
 function getStorage() {
@@ -28,13 +28,19 @@ function upgradeState(value) {
   const seed = createDemoState();
   if (!Array.isArray(upgraded.requisitions)) upgraded.requisitions = seed.requisitions;
   if (!Array.isArray(upgraded.auditLog)) upgraded.auditLog = seed.auditLog;
+  upgraded.components = upgraded.components.map((component) => ({
+    ...component,
+    image: component.image || null,
+    createdOn: component.createdOn || seed.metadata.seededAt,
+    updatedOn: component.updatedOn || component.createdOn || seed.metadata.seededAt
+  }));
   upgraded.metadata = { ...upgraded.metadata, schemaVersion: seed.metadata.schemaVersion };
   return upgraded;
 }
 
 function notifyStoreChange() {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event('stockroom:demo-store-change'));
+    window.dispatchEvent(new Event('inventory:demo-store-change'));
   }
 }
 
@@ -85,7 +91,7 @@ export function updateDemoState(updater) {
 }
 
 export function subscribeToDemoStore(listener) {
-  const eventName = 'stockroom:demo-store-change';
+  const eventName = 'inventory:demo-store-change';
   window.addEventListener(eventName, listener);
   return () => window.removeEventListener(eventName, listener);
 }

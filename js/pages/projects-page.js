@@ -1,15 +1,30 @@
 import { getProjectDetails, listProjectSummaries } from '../services/project-service.js';
+import { openCreateProjectModal } from '../ui/project-modal.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters.js';
 
+let projectsController;
+
+export function destroyProjectsPage() {
+  projectsController?.abort();
+  projectsController = null;
+}
+
 export async function renderProjectsPage(container) {
+  destroyProjectsPage();
   container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading projects…</h2></section>';
   const projects = await listProjectSummaries();
   const cards = projects.map((project) => `<a class="project-card" href="/projects/${project.id}" data-route-link><span class="status-badge status-badge--${project.status === 'Active' ? 'success' : 'neutral'}">${project.status}</span><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(project.description || 'No description')}</p><div><strong>${project.takeCount}</strong><span>take operations</span></div><small>${formatCurrency(project.estimatedValue)} estimated consumption</small></a>`).join('');
-  container.innerHTML = `<section class="overview-page" aria-label="Projects"><div class="project-grid">${cards}</div></section>`;
+  container.innerHTML = `<section class="overview-page" aria-label="Projects"><div class="page-actions"><button class="button" type="button" data-create-project>New project</button></div><div class="project-grid">${cards}</div></section>`;
+  projectsController = new AbortController();
+  container.addEventListener('click', async (event) => {
+    if (!event.target.closest('[data-create-project]')) return;
+    openCreateProjectModal({ onCreated: () => renderProjectsPage(container) });
+  }, { signal: projectsController.signal });
 }
 
 export async function renderProjectDetailsPage(container, projectId) {
+  destroyProjectsPage();
   container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading project…</h2></section>';
   const project = await getProjectDetails(projectId);
   if (!project) { container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Project not found</h2><a class="button" href="/projects" data-route-link>Back to Projects</a></section>'; return; }

@@ -10,7 +10,7 @@
   top: 0;
   min-height: 100vh;
   flex-direction: column;
-  padding: 1.25rem;
+  padding: 1rem;
   background: var(--color-sidebar);
   color: #f6f8fc;
 }
@@ -19,8 +19,8 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  min-height: 3.5rem;
-  padding: 0.5rem;
+  min-height: 3.125rem;
+  padding: 0.5rem 0.625rem;
   border-radius: var(--radius-md);
 }
 
@@ -63,14 +63,14 @@
 .primary-nav {
   display: grid;
   gap: 0.25rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  min-height: 2.75rem;
+  min-height: 2.625rem;
   padding: 0.625rem 0.75rem;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -91,55 +91,28 @@
 }
 
 .sidebar-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: grid;
+  gap: 0.125rem;
   margin-top: auto;
-  padding: 1rem 0.75rem 0;
+  padding: 1rem 0.625rem 0;
   border-top: 1px solid rgb(255 255 255 / 11%);
   color: var(--color-sidebar-muted);
   font-size: 0.8125rem;
 }
 
-.app-frame {
-  min-width: 0;
-}
-
-.topbar {
-  display: flex;
-  min-height: 5.625rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem clamp(1.25rem, 3vw, 2.5rem);
-  border-bottom: 1px solid var(--color-border);
-  background: rgb(255 255 255 / 90%);
-}
-
-.eyebrow {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-#page-title {
-  margin-top: 0.125rem;
-  font-size: clamp(1.25rem, 2vw, 1.625rem);
-  line-height: 1.2;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.sidebar-footer strong {
+  color: #f6f8fc;
+  font-size: 0.8125rem;
 }
 
 .main-content {
   width: min(100%, var(--content-max-width));
   margin: 0 auto;
-  padding: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(1rem, 2.25vw, 2rem);
+}
+
+.app-frame {
+  min-width: 0;
 }
 
 @media (max-width: 48rem) {
@@ -188,16 +161,6 @@
   }
 
   .sidebar-footer {
-    display: none;
-  }
-}
-
-@media (max-width: 30rem) {
-  .topbar {
-    align-items: flex-start;
-  }
-
-  .role-badge {
     display: none;
   }
 }

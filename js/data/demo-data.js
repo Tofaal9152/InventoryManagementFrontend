@@ -1,7 +1,7 @@
 export function createDemoState() {
   return {
     metadata: {
-      schemaVersion: 2,
+      schemaVersion: 3,
       seededAt: new Date().toISOString()
     },
     users: [
@@ -62,6 +62,7 @@ export function createDemoState() {
     components: [
       {
         id: 'component-lm358',
+        image: null,
         name: 'LM358N Dual Op-Amp',
         partNumber: 'LM358N',
         categoryId: 'category-ic',
@@ -71,10 +72,13 @@ export function createDemoState() {
         lastBuyingPrice: 38,
         deliveryCharge: 0,
         minimumQuantity: 8,
-        datasheetUrl: 'https://www.ti.com/lit/ds/symlink/lm358.pdf'
+        datasheetUrl: 'https://www.ti.com/lit/ds/symlink/lm358.pdf',
+        createdOn: '2026-09-07T08:00:00.000Z',
+        updatedOn: '2026-09-09T07:30:00.000Z'
       },
       {
         id: 'component-resistor-1k',
+        image: null,
         name: '1 kOhm Resistor',
         partNumber: 'RES-1K-1/4W',
         categoryId: 'category-passive',
@@ -84,10 +88,13 @@ export function createDemoState() {
         lastBuyingPrice: 1.2,
         deliveryCharge: 0,
         minimumQuantity: 20,
-        datasheetUrl: ''
+        datasheetUrl: '',
+        createdOn: '2026-09-06T08:00:00.000Z',
+        updatedOn: '2026-09-08T09:00:00.000Z'
       },
       {
         id: 'component-capacitor-100n',
+        image: null,
         name: '100 nF Ceramic Capacitor',
         partNumber: 'CAP-100N-50V',
         categoryId: 'category-passive',
@@ -97,10 +104,13 @@ export function createDemoState() {
         lastBuyingPrice: 2.5,
         deliveryCharge: 0,
         minimumQuantity: 15,
-        datasheetUrl: ''
+        datasheetUrl: '',
+        createdOn: '2026-09-05T08:00:00.000Z',
+        updatedOn: '2026-09-07T12:00:00.000Z'
       },
       {
         id: 'component-led-red',
+        image: null,
         name: '5 mm Red LED',
         partNumber: 'LED-RED-5MM',
         categoryId: 'category-led',
@@ -110,7 +120,9 @@ export function createDemoState() {
         lastBuyingPrice: 4,
         deliveryCharge: 0,
         minimumQuantity: 30,
-        datasheetUrl: ''
+        datasheetUrl: '',
+        createdOn: '2026-09-04T08:00:00.000Z',
+        updatedOn: '2026-09-08T08:15:00.000Z'
       }
     ],
     cabinetGroups: [

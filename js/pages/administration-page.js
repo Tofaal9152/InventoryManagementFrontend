@@ -10,6 +10,7 @@ const sections = Object.freeze({
   '/settings/users': { title: 'Users & roles', eyebrow: 'Administration', description: 'The v1 roles are fixed: Admin, Manager and Staff.' }
 });
 let administrationController;
+let auditLogFilters = { query: '', entity: 'all', action: 'all', from: '', to: '' };
 
 function administrationNav(route) {
   return `<nav class="administration-nav" aria-label="Administration sections">${Object.entries(sections).map(([path, section]) => `<a href="${path}" data-route-link ${path === route ? 'aria-current="page"' : ''}>${section.title}</a>`).join('')}</nav>`;
@@ -33,6 +34,33 @@ function renderCabinets(cabinets) {
 
 function renderCabinetActions() {
   return `<section class="administration-placeholder-grid" aria-label="Future backend tools"><article><h3>Import inventory</h3><p>Template, column mapping and atomic validation will connect to the future import endpoint.</p><button class="button button--secondary" type="button" data-admin-placeholder>Import placeholder</button></article><article><h3>Export inventory</h3><p>The active filters and selected columns will be supplied to a CSV/XLSX export endpoint.</p><button class="button button--secondary" type="button" data-admin-placeholder>Export placeholder</button></article><article><h3>Drawer labels & QR</h3><p>Printable labels will be generated server-side from current drawer locations.</p><button class="button button--secondary" type="button" data-admin-placeholder>Label placeholder</button></article></section>`;
+}
+
+function filterAuditEvents(events) {
+  const query = auditLogFilters.query.trim().toLowerCase();
+  return events.filter((event) => {
+    const date = String(event.timestamp || '').slice(0, 10);
+    const searchableText = [event.entity, event.action, event.summary, event.actor?.name].join(' ').toLowerCase();
+    return (!query || searchableText.includes(query))
+      && (auditLogFilters.entity === 'all' || event.entity === auditLogFilters.entity)
+      && (auditLogFilters.action === 'all' || event.action === auditLogFilters.action)
+      && (!auditLogFilters.from || date >= auditLogFilters.from)
+      && (!auditLogFilters.to || date <= auditLogFilters.to);
+  });
+}
+
+function renderAuditRows(events) {
+  return events.map((event) => `<tr><td>${formatDateTime(event.timestamp)}</td><td>${escapeHtml(event.entity)}</td><td>${escapeHtml(event.action)}</td><td>${escapeHtml(event.summary)}</td><td>${escapeHtml(event.actor?.name || 'System')}</td></tr>`).join('') || '<tr><td colspan="5">No audit events match these filters.</td></tr>';
+}
+
+function updateAuditLogResults(container, events) {
+  const filteredEvents = filterAuditEvents(events);
+  const tableBody = container.querySelector('[data-audit-results]');
+  const count = container.querySelector('[data-audit-count]');
+  const clearButton = container.querySelector('[data-clear-audit-filters]');
+  if (tableBody) tableBody.innerHTML = renderAuditRows(filteredEvents);
+  if (count) count.textContent = `${filteredEvents.length} event${filteredEvents.length === 1 ? '' : 's'}`;
+  if (clearButton) clearButton.disabled = Object.values(auditLogFilters).every((value) => !value || value === 'all');
 }
 
 export async function renderAdministrationPage(container, route) {
@@ -66,8 +94,42 @@ export async function renderAuditLogPage(container) {
   destroyAdministrationPage();
   container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading audit log…</h2></section>';
   const events = await getAuditLog();
-  const rows = events.map((event) => `<tr><td>${formatDateTime(event.timestamp)}</td><td>${escapeHtml(event.entity)}</td><td>${escapeHtml(event.action)}</td><td>${escapeHtml(event.summary)}</td><td>${escapeHtml(event.actor?.name || 'System')}</td></tr>`).join('') || '<tr><td colspan="5">No audit events yet.</td></tr>';
-  container.innerHTML = `<section class="administration-page" aria-label="Audit log"><div class="library-table-wrap"><table class="library-table"><thead><tr><th>When</th><th>Entity</th><th>Action</th><th>Summary</th><th>Actor</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  const entities = [...new Set(events.map((event) => event.entity))].sort();
+  const actions = [...new Set(events.map((event) => event.action))].sort();
+  const filteredEvents = filterAuditEvents(events);
+  container.innerHTML = `
+    <section class="administration-page" aria-label="Audit log">
+      <section class="audit-toolbar" aria-label="Filter audit log">
+        <label class="audit-search"><span class="visually-hidden">Search audit log</span><input class="field__control" type="search" value="${escapeHtml(auditLogFilters.query)}" placeholder="Search summary or actor" data-audit-filter="query"></label>
+        <label><span class="visually-hidden">Filter by entity</span><select class="field__control" data-audit-filter="entity"><option value="all">All entities</option>${entities.map((entity) => `<option value="${escapeHtml(entity)}" ${auditLogFilters.entity === entity ? 'selected' : ''}>${escapeHtml(entity)}</option>`).join('')}</select></label>
+        <label><span class="visually-hidden">Filter by action</span><select class="field__control" data-audit-filter="action"><option value="all">All actions</option>${actions.map((action) => `<option value="${escapeHtml(action)}" ${auditLogFilters.action === action ? 'selected' : ''}>${escapeHtml(action)}</option>`).join('')}</select></label>
+        <label><span class="visually-hidden">From date</span><input class="field__control" type="date" value="${escapeHtml(auditLogFilters.from)}" data-audit-filter="from" aria-label="From date"></label>
+        <label><span class="visually-hidden">To date</span><input class="field__control" type="date" value="${escapeHtml(auditLogFilters.to)}" data-audit-filter="to" aria-label="To date"></label>
+        <button class="table-action" type="button" data-clear-audit-filters ${Object.values(auditLogFilters).every((value) => !value || value === 'all') ? 'disabled' : ''}>Clear filters</button>
+      </section>
+      <div class="audit-result-meta"><span data-audit-count>${filteredEvents.length} event${filteredEvents.length === 1 ? '' : 's'}</span></div>
+      <div class="library-table-wrap"><table class="library-table"><thead><tr><th>When</th><th>Entity</th><th>Action</th><th>Summary</th><th>Actor</th></tr></thead><tbody data-audit-results>${renderAuditRows(filteredEvents)}</tbody></table></div>
+    </section>
+  `;
+  administrationController = new AbortController();
+  container.addEventListener('input', (event) => {
+    const filter = event.target.dataset.auditFilter;
+    if (!filter) return;
+    auditLogFilters = { ...auditLogFilters, [filter]: event.target.value };
+    updateAuditLogResults(container, events);
+  }, { signal: administrationController.signal });
+  container.addEventListener('change', (event) => {
+    const filter = event.target.dataset.auditFilter;
+    if (!filter) return;
+    auditLogFilters = { ...auditLogFilters, [filter]: event.target.value };
+    updateAuditLogResults(container, events);
+  }, { signal: administrationController.signal });
+  container.addEventListener('click', (event) => {
+    if (!event.target.closest('[data-clear-audit-filters]')) return;
+    auditLogFilters = { query: '', entity: 'all', action: 'all', from: '', to: '' };
+    container.querySelectorAll('[data-audit-filter]').forEach((control) => { control.value = auditLogFilters[control.dataset.auditFilter]; });
+    updateAuditLogResults(container, events);
+  }, { signal: administrationController.signal });
 }
 
 export function destroyAdministrationPage() {

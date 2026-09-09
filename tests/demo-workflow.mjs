@@ -16,7 +16,7 @@ import {
   takeStock,
   transferStock
 } from '../js/services/inventory-service.js';
-import { getProjectDetails } from '../js/services/project-service.js';
+import { ProjectValidationError, createProject, getProjectDetails } from '../js/services/project-service.js';
 import { getDashboardData, getReportsData } from '../js/services/report-service.js';
 import {
   RequisitionValidationError,
@@ -54,8 +54,30 @@ async function run() {
       () => saveComponent({ name: 'Duplicate part', partNumber: 'LM358N', categoryId: 'category-ic', unitId: 'unit-pcs', minimumQuantity: 0, lastBuyingPrice: 0 }),
       ComponentValidationError
     );
-    const createdComponent = await saveComponent({ name: 'Test jumper wire', partNumber: 'TEST-JUMPER-01', categoryId: 'category-passive', unitId: 'unit-m', minimumQuantity: 2, lastBuyingPrice: 3.5 });
+    const createdComponent = await saveComponent({
+      name: 'Test jumper wire',
+      partNumber: 'TEST-JUMPER-01',
+      categoryId: 'category-passive',
+      unitId: 'unit-m',
+      minimumQuantity: 2,
+      lastBuyingPrice: 3.5,
+      deliveryCharge: 12,
+      image: { dataUrl: 'data:image/png;base64,iVBORw0KGgo=', name: 'jumper.png', type: 'image/png', size: 8 }
+    });
     assert.equal(createdComponent.name, 'Test jumper wire');
+    assert.equal(createdComponent.deliveryCharge, 12);
+    assert.equal(createdComponent.image.name, 'jumper.png');
+    assert.ok(createdComponent.createdOn);
+    assert.ok(createdComponent.updatedOn);
+    await expectReject(
+      () => saveComponent({ name: 'Invalid delivery component', categoryId: 'category-passive', unitId: 'unit-pcs', minimumQuantity: 0, lastBuyingPrice: 0, deliveryCharge: -1 }),
+      ComponentValidationError
+    );
+
+    const createdProject = await createProject({ name: 'Quality Project', description: 'Created during demo workflow checks.', status: 'Active' });
+    assert.equal(createdProject.name, 'Quality Project');
+    assert.equal(createdProject.status, 'Active');
+    await expectReject(() => createProject({ name: 'Quality Project' }), ProjectValidationError);
 
     await assignComponentToDrawer({ cabinetId: 'cabinet-1', drawerId: 'drawer-d1', componentId: 'component-lm358', quantity: 2, note: 'Quality check' });
     await expectReject(

@@ -9,8 +9,9 @@ export async function getDashboardData() {
   const totalStock = components.reduce((total, component) => total + component.totalQuantity, 0);
   const totalValue = components.reduce((total, component) => total + component.totalQuantity * component.lastBuyingPrice, 0);
   const drawers = workspace.cabinets.flatMap((cabinet) => cabinet.drawers);
-  const recentMovements = state.movements.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
+  const movements = state.movements.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   const componentsById = new Map(components.map((component) => [component.id, component]));
+  const resolvedMovements = movements.map((movement) => ({ ...movement, component: componentsById.get(movement.componentId) }));
   return {
     componentCount: components.length,
     totalStock,
@@ -19,7 +20,8 @@ export async function getDashboardData() {
     outOfStockCount: components.filter((component) => component.stockState === 'out').length,
     pendingRequisitionCount: state.requisitions.filter((requisition) => requisition.status === 'Pending').length,
     drawerUtilisation: drawers.length ? Math.round(drawers.filter((drawer) => drawer.componentId).length / drawers.length * 100) : 0,
-    recentMovements: recentMovements.map((movement) => ({ ...movement, component: componentsById.get(movement.componentId) }))
+    recentMovements: resolvedMovements.slice(0, 5),
+    movements: resolvedMovements
   };
 }
 

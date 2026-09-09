@@ -12,6 +12,7 @@ export function validateComponent(component, { existingComponents = [], categori
   const partNumber = normaliseText(component.partNumber);
   const minimumQuantity = component.minimumQuantity ?? 0;
   const lastBuyingPrice = component.lastBuyingPrice ?? 0;
+  const deliveryCharge = component.deliveryCharge ?? 0;
 
   if (!name) {
     errors.name = 'Component name is required.';
@@ -30,6 +31,9 @@ export function validateComponent(component, { existingComponents = [], categori
   }
   if (!isFiniteNumber(lastBuyingPrice) || Number(lastBuyingPrice) < 0) {
     errors.lastBuyingPrice = 'Buying price must be zero or greater.';
+  }
+  if (!isFiniteNumber(deliveryCharge) || Number(deliveryCharge) < 0) {
+    errors.deliveryCharge = 'Delivery charge must be zero or greater.';
   }
   if (component.datasheetUrl) {
     try {

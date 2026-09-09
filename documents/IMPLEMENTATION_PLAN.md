@@ -371,6 +371,42 @@ Recommended next: Step N+1 - [step name]
 - **Decisions:** The frontend remains in demo mode until Django endpoints exist. `apiRequest()` is the central future client for JSON, same-origin credentials, Django CSRF and structured errors; adapters will be introduced service-by-service so page contracts do not change. Automated checks are Node-based and do not substitute for visual testing on the target Raspberry Pi; the required device/browser checklist is recorded separately.
 - **Recommended next:** Implement the Django API contracts, then complete the documented target-device browser QA.
 
+#### 2026-09-09 - Project creation refinement
+
+- **Changed:** `js/pages/projects-page.js`, `js/ui/project-modal.js`, `js/services/project-service.js`, `css/pages/overview.css`, `js/app.js`, `tests/demo-workflow.mjs`, `documents/SRS_COVERAGE_AUDIT.md`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed. The workflow test creates an Active Project and rejects a duplicate name.
+- **Decisions:** The Projects route now exposes a `New project` action. The modal collects a required unique name, optional description and initial Active/Closed status; creation appends an audit record and retains the existing service boundary for a later Django `POST /projects/` adapter.
+
+#### 2026-09-09 - Component details refinement
+
+- **Changed:** `js/pages/library-page.js`, `css/pages/library.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed. Browser automation was unavailable in this environment, so final visual checking remains for the local target browser.
+- **Decisions:** The component detail route now uses a lightweight overview workspace: summary and available-stock card, storage locations, full Library record/pricing data, direct edit/datasheet actions and a compact movement-history side panel. It uses only CSS Grid/Flexbox and standard HTML controls.
+
+#### 2026-09-09 - Dashboard activity filters
+
+- **Changed:** `js/pages/dashboard-page.js`, `js/services/report-service.js`, `css/pages/overview.css`, `js/app.js`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** Recent dashboard movements can be filtered by operation type and component. The first five matching events remain visible to keep the dashboard compact; Reports continues to be the full activity view.
+
+#### 2026-09-09 - Audit log filters
+
+- **Changed:** `js/pages/administration-page.js`, `css/pages/administration.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** Audit filtering is client-side in demo mode and supports free-text search, entity, action and inclusive from/to dates. The future audit endpoint can apply the same filters server-side without changing the table UI.
+
+#### 2026-09-09 - Administration layout refinement
+
+- **Changed:** `css/pages/administration.css`.
+- **Verified:** `npm test` and whitespace validation passed.
+- **Decisions:** Cabinet dimension settings use a compact, non-stretching action row. Import, export and label tools use balanced responsive cards rather than leaving an empty grid column.
+
+#### 2026-09-09 - Large cabinet grid handling
+
+- **Changed:** `js/pages/inventory-page.js`, `css/pages/inventory.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** Cabinets with up to four columns retain the responsive fitted grid. Cabinets with five or more columns preserve readable drawer-card widths and scroll horizontally inside the drawer-map container only.
+
 ## 12. Performance Rules
 
 - Use CSS Grid/Flexbox, native browser controls and small SVG icons.

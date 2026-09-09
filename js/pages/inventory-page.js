@@ -71,12 +71,15 @@ function renderFilterButtons(cabinet) {
 
 function renderDrawerCell(drawer) {
   const isSelected = drawer.id === selectedDrawerId;
-  const componentName = drawer.component ? escapeHtml(drawer.component.name) : 'Empty drawer';
-  const quantity = drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : 'Unassigned';
+  const componentName = drawer.component ? escapeHtml(drawer.component.name) : 'Available drawer';
+  const quantity = drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : 'Ready to assign';
 
   return `
     <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${drawer.code}, ${drawer.stockLabel}${drawer.component ? `, ${drawer.component.name}` : ''}">
-      <span class="drawer-cell__code">${drawer.code}</span>
+      <span class="drawer-cell__top">
+        <span class="drawer-cell__code">${drawer.code}</span>
+        <span class="drawer-cell__state">${drawer.stockLabel}</span>
+      </span>
       <span class="drawer-cell__component">${componentName}</span>
       <span class="drawer-cell__quantity">${quantity}</span>
     </button>
@@ -132,7 +135,7 @@ function renderDrawerDetails(drawer, cabinet) {
     </div>
     <section class="component-summary">
       <div>
-        <h3>${escapeHtml(component.name)}</h3>
+        <h3><a class="component-summary__link" href="/library/${component.id}" data-route-link>${escapeHtml(component.name)}</a></h3>
         <p>${escapeHtml(component.partNumber || 'No part number')}</p>
       </div>
     </section>
@@ -284,8 +287,8 @@ export async function renderInventoryPage(container, { preserveSelection = false
       <aside class="cabinet-browser">
         <div class="cabinet-browser__title">
           <div class="cabinet-browser__actions">
-            <button class="button button--secondary cabinet-create-button" type="button" data-create-cabinet>New cabinet</button>
-            <button class="button button--secondary cabinet-create-button" type="button" data-create-library-component>New Library component</button>
+            <button class="button button--secondary" type="button" data-create-cabinet>New cabinet</button>
+            <button class="button button--secondary" type="button" data-create-library-component>New Library component</button>
           </div>
         </div>
         <div class="cabinet-browser__content"></div>
@@ -298,7 +301,9 @@ export async function renderInventoryPage(container, { preserveSelection = false
           </div>
           <div class="inventory-filters" aria-label="Drawer filters"></div>
         </header>
-        <div class="cabinet-grid" aria-label="Cabinet drawers"></div>
+        <div class="cabinet-grid-scroll" tabindex="0" aria-label="Scrollable cabinet drawer grid">
+          <div class="cabinet-grid" aria-label="Cabinet drawers"></div>
+        </div>
       </section>
       <aside class="drawer-panel" aria-live="polite"></aside>
     </section>
