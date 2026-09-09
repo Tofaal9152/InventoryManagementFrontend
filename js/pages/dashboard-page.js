@@ -47,7 +47,6 @@ export async function renderDashboardPage(container) {
           <div class="dashboard-activity-filters" aria-label="Filter recent movements">
             <label class="field"><span class="field__label">Operation</span><select class="field__control" data-dashboard-filter="type"><option value="all">All operations</option>${movementTypes.map((type) => `<option value="${escapeHtml(type)}" ${dashboardFilter.type === type ? 'selected' : ''}>${escapeHtml(type)}</option>`).join('')}</select></label>
             <label class="field"><span class="field__label">Component</span><select class="field__control" data-dashboard-filter="componentId"><option value="all">All components</option>${movementComponents.map((component) => `<option value="${escapeHtml(component.id)}" ${dashboardFilter.componentId === component.id ? 'selected' : ''}>${escapeHtml(component.name)}</option>`).join('')}</select></label>
-            <div class="dashboard-activity-filter-actions"><button class="table-action" type="button" data-dashboard-clear ${dashboardFilter.type === 'all' && dashboardFilter.componentId === 'all' ? 'disabled' : ''}>Clear filters</button></div>
           </div>
           <span class="dashboard-activity-count">${filteredMovements.length} matching movement${filteredMovements.length === 1 ? '' : 's'}</span>
         </div>
@@ -61,11 +60,6 @@ export async function renderDashboardPage(container) {
     const filter = event.target.dataset.dashboardFilter;
     if (!filter) return;
     dashboardFilter = { ...dashboardFilter, [filter]: event.target.value };
-    renderDashboardPage(container);
-  }, { signal: dashboardController.signal });
-  container.addEventListener('click', (event) => {
-    if (!event.target.closest('[data-dashboard-clear]')) return;
-    dashboardFilter = { type: 'all', componentId: 'all' };
     renderDashboardPage(container);
   }, { signal: dashboardController.signal });
 }

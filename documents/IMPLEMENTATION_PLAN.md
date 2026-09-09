@@ -423,7 +423,13 @@ Recommended next: Step N+1 - [step name]
 
 - **Changed:** `js/pages/inventory-page.js`, `css/pages/inventory.css`.
 - **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
-- **Decisions:** Drawer tiles now use a lightweight 2D cabinet-face treatment inspired by a real steel drawer: a panel bevel, compact circular pull and a subtle stock-state accent. This is rendered entirely in CSS; it does not use images, canvas, WebGL or animation-heavy effects.
+- **Decisions:** Drawer tiles use a lightweight 2D cabinet-face treatment inspired by a real white steel drawer: label plate, small status LED, status text, brushed-metal horizontal handle and thin seams between drawers. The selected state has a blue outline and a slight pulled-out position. This is rendered entirely in CSS; it does not use images, canvas, WebGL or animation-heavy effects.
+
+#### 2026-09-09 - Drawer detail side panel
+
+- **Changed:** `js/pages/inventory-page.js`, `css/pages/inventory.css`.
+- **Verified:** JavaScript syntax checks, `npm test` and whitespace validation passed.
+- **Decisions:** Drawer details are no longer permanently visible in the workspace. Selecting a drawer opens a lightweight right-side panel over a dimmed backdrop; the workspace remains dedicated to the storage map. The panel closes with its Close button, an outside click or Escape, and keeps the same assignment, stock-action and component-detail flows.
 
 ## 12. Performance Rules
 

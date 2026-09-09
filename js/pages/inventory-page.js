@@ -18,6 +18,7 @@ let selectedCabinetId;
 let selectedDrawerId;
 let activeFilter = 'all';
 let drawerViewMode = 'grid';
+let isDrawerPanelOpen = false;
 let unsubscribeFromInventory;
 let inventoryEventController;
 
@@ -90,11 +91,14 @@ function renderDrawerCell(drawer) {
   return `
     <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${escapeHtml(tooltip.replaceAll('\n', ', '))}" title="${escapeHtml(tooltip)}">
       <span class="drawer-cell__front">
-        <span class="drawer-cell__top">
-          <span class="drawer-cell__code">${drawer.code}</span>
+        <span class="drawer-cell__info">
+          <span class="drawer-cell__identity">
+            <span class="drawer-cell__plate">${drawer.code}</span>
+            <span class="drawer-cell__led" aria-hidden="true"></span>
+          </span>
+          <span class="drawer-cell__label">${drawer.stockLabel}</span>
         </span>
-        <span class="drawer-cell__pull" aria-hidden="true"></span>
-        <span class="drawer-cell__label">${drawer.stockLabel}</span>
+        <span class="drawer-cell__handle" aria-hidden="true"></span>
       </span>
     </button>
   `;
@@ -152,7 +156,10 @@ function renderDrawerDetails(drawer, cabinet) {
           <p class="eyebrow">Selected drawer</p>
           <h2>${drawer.code}</h2>
         </div>
-        <span class="status-badge status-badge--neutral">Empty</span>
+        <div class="drawer-panel__heading-actions">
+          <span class="status-badge status-badge--neutral">Empty</span>
+          <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>Close</button>
+        </div>
       </div>
       <div class="drawer-panel__empty">
         <h3>This drawer is available.</h3>
@@ -177,7 +184,10 @@ function renderDrawerDetails(drawer, cabinet) {
         <p class="eyebrow">Selected drawer</p>
         <h2>${drawer.code}</h2>
       </div>
-      <span class="status-badge status-badge--${statusClass}">${drawer.stockLabel}</span>
+      <div class="drawer-panel__heading-actions">
+        <span class="status-badge status-badge--${statusClass}">${drawer.stockLabel}</span>
+        <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>Close</button>
+      </div>
     </div>
     <section class="component-summary">
       <div>
@@ -230,6 +240,28 @@ function updateSelection(container) {
     row.classList.toggle('is-selected', row.querySelector('[data-drawer-id]')?.dataset.drawerId === drawer.id);
   });
   container.querySelector('.drawer-panel').innerHTML = renderDrawerDetails(drawer, cabinet);
+  updateDrawerPanelState(container);
+}
+
+function updateDrawerPanelState(container) {
+  const panel = container.querySelector('.drawer-panel');
+  const backdrop = container.querySelector('.drawer-panel-backdrop');
+
+  panel.classList.toggle('is-open', isDrawerPanelOpen);
+  backdrop.classList.toggle('is-open', isDrawerPanelOpen);
+  panel.setAttribute('aria-hidden', String(!isDrawerPanelOpen));
+  panel.inert = !isDrawerPanelOpen;
+}
+
+function openDrawerPanel(container) {
+  isDrawerPanelOpen = true;
+  updateSelection(container);
+  requestAnimationFrame(() => container.querySelector('[data-close-drawer-panel]')?.focus());
+}
+
+function closeDrawerPanel(container) {
+  isDrawerPanelOpen = false;
+  updateDrawerPanelState(container);
 }
 
 function updateCabinetWorkspace(container) {
@@ -261,10 +293,16 @@ function bindInventoryEvents(container) {
     const createComponentButton = event.target.closest('[data-create-library-component]');
     const assignButton = event.target.closest('[data-assign-drawer-id]');
     const operationButton = event.target.closest('[data-stock-operation]');
+    const closePanelButton = event.target.closest('[data-close-drawer-panel]');
+
+    if (closePanelButton) {
+      closeDrawerPanel(container);
+      return;
+    }
 
     if (drawerButton) {
       selectedDrawerId = drawerButton.dataset.drawerId;
-      updateSelection(container);
+      openDrawerPanel(container);
       return;
     }
     if (filterButton) {
@@ -312,6 +350,12 @@ function bindInventoryEvents(container) {
       });
     }
   }, { signal: inventoryEventController.signal });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isDrawerPanelOpen) {
+      closeDrawerPanel(container);
+    }
+  }, { signal: inventoryEventController.signal });
 }
 
 export async function renderInventoryPage(container, { preserveSelection = false } = {}) {
@@ -357,7 +401,8 @@ export async function renderInventoryPage(container, { preserveSelection = false
         </header>
         <div class="drawer-view"></div>
       </section>
-      <aside class="drawer-panel" aria-live="polite"></aside>
+      <button class="drawer-panel-backdrop" type="button" data-close-drawer-panel aria-label="Close drawer details"></button>
+      <aside class="drawer-panel" aria-live="polite" aria-hidden="true"></aside>
     </section>
   `;
 
@@ -380,4 +425,5 @@ export function destroyInventoryPage() {
   selectedDrawerId = undefined;
   activeFilter = 'all';
   drawerViewMode = 'grid';
+  isDrawerPanelOpen = false;
 }
