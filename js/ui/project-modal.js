@@ -2,6 +2,7 @@ import { ProjectValidationError, createProject } from '../services/project-servi
 import { clearFormErrors, setFieldError } from './form-fields.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
+import { renderIcon } from './icons.js';
 
 export function openCreateProjectModal({ onCreated } = {}) {
   const form = document.createElement('form');
@@ -29,8 +30,8 @@ export function openCreateProjectModal({ onCreated } = {}) {
       </div>
     </div>
     <div class="dialog__actions">
-      <button class="button button--secondary" type="button" data-project-cancel>Cancel</button>
-      <button class="button" type="submit">Create project</button>
+      <button class="button button--secondary" type="button" data-project-cancel>${renderIcon('close')}Cancel</button>
+      <button class="button" type="submit">${renderIcon('projects')}Create project</button>
     </div>
   `;
 

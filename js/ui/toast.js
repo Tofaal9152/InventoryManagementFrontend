@@ -1,3 +1,5 @@
+import { renderIcon } from './icons.js';
+
 let toastRegion;
 
 function getToastRegion() {
@@ -19,12 +21,17 @@ export function showToast(message, { type = 'success', duration = 3500 } = {}) {
   const messageElement = document.createElement('span');
   let timeoutId;
 
+  const body = document.createElement('div');
+
   toast.className = `toast toast--${type}`;
+  body.className = 'toast__body';
+  body.innerHTML = renderIcon(type === 'error' ? 'error' : 'success', { className: 'icon toast__icon' });
   messageElement.textContent = message;
+  body.append(messageElement);
   closeButton.className = 'toast__close';
   closeButton.type = 'button';
   closeButton.setAttribute('aria-label', 'Dismiss notification');
-  closeButton.textContent = '×';
+  closeButton.innerHTML = renderIcon('close');
 
   const dismiss = () => {
     clearTimeout(timeoutId);
@@ -32,7 +39,7 @@ export function showToast(message, { type = 'success', duration = 3500 } = {}) {
   };
 
   closeButton.addEventListener('click', dismiss);
-  toast.append(messageElement, closeButton);
+  toast.append(body, closeButton);
   getToastRegion().append(toast);
   timeoutId = window.setTimeout(dismiss, duration);
 

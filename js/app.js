@@ -3,6 +3,7 @@ import { initializeRouter } from './router.js';
 import { initialiseDemoSession, resetDemoSession } from './services/demo-session-service.js';
 import { confirmAction } from './ui/confirm-dialog.js';
 import { showToast } from './ui/toast.js';
+import { renderIcon } from './ui/icons.js';
 import { destroyInventoryPage, renderInventoryPage } from './pages/inventory-page.js';
 import { destroyLibraryPage, renderComponentDetailsPage, renderLibraryPage } from './pages/library-page.js';
 import { destroyDashboardPage, renderDashboardPage } from './pages/dashboard-page.js';
@@ -40,9 +41,10 @@ const pageCopy = {
 };
 
 function renderNavigation(activePath) {
-  navigationRoot.innerHTML = NAVIGATION.map(({ path, label }) => `
+  navigationRoot.innerHTML = NAVIGATION.map(({ path, label, icon }) => `
     <a class="nav-link" href="${path}" data-route-link ${path === activePath ? 'aria-current="page"' : ''}>
-      ${label}
+      ${renderIcon(icon, { className: 'nav-link__icon' })}
+      <span class="nav-link__label">${label}</span>
     </a>
   `).join('');
 }
@@ -64,7 +66,7 @@ function renderPlannedPage(route) {
         <h2 id="route-heading">${title} will be built in a later step.</h2>
       </div>
       <p>This page route is available now so the navigation and future API integration use clean, stable URLs from the beginning.</p>
-      <a class="button" href="${DEFAULT_ROUTE}" data-route-link>Back to dashboard</a>
+      <a class="button" href="${DEFAULT_ROUTE}" data-route-link>${renderIcon('back')}Back to dashboard</a>
     </section>
   `;
 }
@@ -75,7 +77,7 @@ function renderNotFoundPage() {
       <p class="eyebrow">404</p>
       <h2 id="not-found-title">This page is not available.</h2>
       <p>Use the navigation to return to the inventory workspace.</p>
-      <a class="button" href="${DEFAULT_ROUTE}" data-route-link>Go to dashboard</a>
+      <a class="button" href="${DEFAULT_ROUTE}" data-route-link>${renderIcon('dashboard')}Go to dashboard</a>
     </section>
   `;
 }
@@ -96,7 +98,7 @@ function renderFoundationPage(page) {
       </div>
       <p>${page.description}</p>
       <div class="foundation-grid">${cards}</div>
-      ${page.title === 'Dashboard' ? '<button class="button button--secondary" type="button" data-reset-demo>Reset demo data</button>' : ''}
+      ${page.title === 'Dashboard' ? `<button class="button button--secondary" type="button" data-reset-demo>${renderIcon('refresh')}Reset demo data</button>` : ''}
     </section>
   `;
 }

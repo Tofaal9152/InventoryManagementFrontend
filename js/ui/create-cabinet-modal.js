@@ -3,6 +3,7 @@ import { clearFormErrors, setFieldError } from './form-fields.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
 import { escapeHtml } from '../utils/dom.js';
+import { renderIcon } from './icons.js';
 
 function getPayload(form) {
   return Object.fromEntries(new FormData(form));
@@ -41,8 +42,8 @@ export async function openCreateCabinetModal({ onCreated } = {}) {
     </div>
     <p class="cabinet-create-form__hint">Drawer labels are generated automatically, such as A1, B1, A2 and B2.</p>
     <div class="dialog__actions">
-      <button class="button button--secondary" type="button" data-cabinet-cancel>Cancel</button>
-      <button class="button" type="submit">Create cabinet</button>
+      <button class="button button--secondary" type="button" data-cabinet-cancel>${renderIcon('close')}Cancel</button>
+      <button class="button" type="submit">${renderIcon('cabinet')}Create cabinet</button>
     </div>
   `;
 

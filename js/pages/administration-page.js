@@ -2,6 +2,7 @@ import { CabinetConfigurationError, getAdministrationData, getAuditLog, updateCa
 import { showToast } from '../ui/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatDateTime, formatQuantity } from '../utils/formatters.js';
+import { renderIcon } from '../ui/icons.js';
 
 const sections = Object.freeze({
   '/settings/cabinets': { title: 'Cabinet settings', eyebrow: 'Administration', description: 'Change the 2D cabinet grid only when no assigned drawer would be removed.' },
@@ -29,11 +30,11 @@ function renderUsersTable(users, roles) {
 }
 
 function renderCabinets(cabinets) {
-  return cabinets.map((cabinet) => `<section class="detail-card"><h3>${escapeHtml(cabinet.name)}</h3><p class="administration-caption">${cabinet.occupiedDrawerCount} assigned drawers out of ${cabinet.drawers.length}.</p><form class="cabinet-config-form" data-cabinet-config data-cabinet-id="${cabinet.id}"><div class="field"><label class="field__label" for="rows-${cabinet.id}">Rows</label><input class="field__control" id="rows-${cabinet.id}" name="rows" type="number" min="1" max="9" value="${cabinet.rows}" required></div><div class="field"><label class="field__label" for="columns-${cabinet.id}">Columns</label><input class="field__control" id="columns-${cabinet.id}" name="columnCount" type="number" min="1" max="26" value="${cabinet.columns.length}" required></div><button class="button" type="submit">Check and save</button></form><p class="administration-caption">Reducing a dimension is blocked when any removed drawer has a component assigned or stock.</p></section>`).join('');
+  return cabinets.map((cabinet) => `<section class="detail-card"><h3>${escapeHtml(cabinet.name)}</h3><p class="administration-caption">${cabinet.occupiedDrawerCount} assigned drawers out of ${cabinet.drawers.length}.</p><form class="cabinet-config-form" data-cabinet-config data-cabinet-id="${cabinet.id}"><div class="field"><label class="field__label" for="rows-${cabinet.id}">Rows</label><input class="field__control" id="rows-${cabinet.id}" name="rows" type="number" min="1" max="9" value="${cabinet.rows}" required></div><div class="field"><label class="field__label" for="columns-${cabinet.id}">Columns</label><input class="field__control" id="columns-${cabinet.id}" name="columnCount" type="number" min="1" max="26" value="${cabinet.columns.length}" required></div><button class="button" type="submit">${renderIcon('check')}Check and save</button></form><p class="administration-caption">Reducing a dimension is blocked when any removed drawer has a component assigned or stock.</p></section>`).join('');
 }
 
 function renderCabinetActions() {
-  return `<section class="administration-placeholder-grid" aria-label="Future backend tools"><article><h3>Import inventory</h3><p>Template, column mapping and atomic validation will connect to the future import endpoint.</p><button class="button button--secondary" type="button" data-admin-placeholder>Import placeholder</button></article><article><h3>Export inventory</h3><p>The active filters and selected columns will be supplied to a CSV/XLSX export endpoint.</p><button class="button button--secondary" type="button" data-admin-placeholder>Export placeholder</button></article><article><h3>Drawer labels & QR</h3><p>Printable labels will be generated server-side from current drawer locations.</p><button class="button button--secondary" type="button" data-admin-placeholder>Label placeholder</button></article></section>`;
+  return `<section class="administration-placeholder-grid" aria-label="Future backend tools"><article><h3>Import inventory</h3><p>Template, column mapping and atomic validation will connect to the future import endpoint.</p><button class="button button--secondary" type="button" data-admin-placeholder>${renderIcon('import')}Import placeholder</button></article><article><h3>Export inventory</h3><p>The active filters and selected columns will be supplied to a CSV/XLSX export endpoint.</p><button class="button button--secondary" type="button" data-admin-placeholder>${renderIcon('export')}Export placeholder</button></article><article><h3>Drawer labels & QR</h3><p>Printable labels will be generated server-side from current drawer locations.</p><button class="button button--secondary" type="button" data-admin-placeholder>${renderIcon('label')}Label placeholder</button></article></section>`;
 }
 
 function filterAuditEvents(events) {
@@ -105,7 +106,7 @@ export async function renderAuditLogPage(container) {
         <label><span class="visually-hidden">Filter by action</span><select class="field__control" data-audit-filter="action"><option value="all">All actions</option>${actions.map((action) => `<option value="${escapeHtml(action)}" ${auditLogFilters.action === action ? 'selected' : ''}>${escapeHtml(action)}</option>`).join('')}</select></label>
         <label><span class="visually-hidden">From date</span><input class="field__control" type="date" value="${escapeHtml(auditLogFilters.from)}" data-audit-filter="from" aria-label="From date"></label>
         <label><span class="visually-hidden">To date</span><input class="field__control" type="date" value="${escapeHtml(auditLogFilters.to)}" data-audit-filter="to" aria-label="To date"></label>
-        <button class="table-action" type="button" data-clear-audit-filters ${Object.values(auditLogFilters).every((value) => !value || value === 'all') ? 'disabled' : ''}>Clear filters</button>
+        <button class="table-action" type="button" data-clear-audit-filters ${Object.values(auditLogFilters).every((value) => !value || value === 'all') ? 'disabled' : ''}>${renderIcon('close')}Clear filters</button>
       </section>
       <div class="audit-result-meta"><span data-audit-count>${filteredEvents.length} event${filteredEvents.length === 1 ? '' : 's'}</span></div>
       <div class="library-table-wrap"><table class="library-table"><thead><tr><th>When</th><th>Entity</th><th>Action</th><th>Summary</th><th>Actor</th></tr></thead><tbody data-audit-results>${renderAuditRows(filteredEvents)}</tbody></table></div>

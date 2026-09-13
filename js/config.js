@@ -5,14 +5,14 @@ export const APP_CONFIG = Object.freeze({
 });
 
 export const NAVIGATION = Object.freeze([
-  { path: '/dashboard', label: 'Dashboard' },
-  { path: '/library', label: 'Library' },
-  { path: '/inventory', label: 'Drawer' },
-  { path: '/projects', label: 'Projects' },
-  { path: '/requisitions', label: 'Requisitions' },
-  { path: '/reports', label: 'Reports' },
-  { path: '/settings/cabinets', label: 'Settings' },
-  { path: '/audit-log', label: 'Audit log' }
+  { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { path: '/library', label: 'Library', icon: 'library' },
+  { path: '/inventory', label: 'Drawer', icon: 'drawer' },
+  { path: '/projects', label: 'Projects', icon: 'projects' },
+  { path: '/requisitions', label: 'Requisitions', icon: 'requisitions' },
+  { path: '/reports', label: 'Reports', icon: 'reports' },
+  { path: '/settings/cabinets', label: 'Settings', icon: 'settings' },
+  { path: '/audit-log', label: 'Audit log', icon: 'audit-log' }
 ]);
 
 export const DEFAULT_ROUTE = '/dashboard';

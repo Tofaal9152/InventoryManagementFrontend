@@ -24,6 +24,17 @@
   border-radius: var(--radius-md);
 }
 
+.brand__mark {
+  width: 1.875rem;
+  height: 1.875rem;
+  flex: 0 0 auto;
+  padding: 0.25rem;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 8%);
+  color: #ffffff;
+}
+
 .brand strong,
 .brand small {
   display: block;
@@ -79,9 +90,26 @@
   font-weight: 600;
 }
 
+.nav-link__icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  opacity: 0.72;
+  transition: opacity 150ms ease;
+}
+
+.nav-link__label {
+  min-width: 0;
+}
+
 .nav-link:hover {
   background: rgb(255 255 255 / 7%);
   color: #ffffff;
+}
+
+.nav-link:hover .nav-link__icon,
+.nav-link[aria-current="page"] .nav-link__icon {
+  opacity: 1;
 }
 
 .nav-link[aria-current="page"] {

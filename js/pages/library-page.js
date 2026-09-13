@@ -7,6 +7,7 @@ import {
 import { openComponentModal } from '../ui/component-modal.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters.js';
+import { renderIcon, renderStatusIcon } from '../ui/icons.js';
 
 const pageSize = 8;
 let libraryState = { query: '', categoryId: '', unitId: '', stockStatus: 'all', page: 1 };
@@ -19,7 +20,8 @@ function statusClass(stockState) {
 }
 
 function renderStatusBadge(component) {
-  return `<span class="status-badge status-badge--${statusClass(component.stockState)}">${component.stockLabel}</span>`;
+  const badgeClass = statusClass(component.stockState);
+  return `<span class="status-badge status-badge--${badgeClass}">${renderStatusIcon(badgeClass)}${component.stockLabel}</span>`;
 }
 
 function renderComponentImage(component) {
@@ -45,8 +47,8 @@ function renderLibraryRows(components) {
       <td>${component.locationCount}</td>
       <td>${formatDateTime(component.updatedOn)}</td>
       <td class="table-actions">
-        <a class="table-action" href="/library/${component.id}" data-route-link>View details</a>
-        <button class="table-action" type="button" data-edit-component-id="${component.id}">Edit</button>
+        <a class="table-action" href="/library/${component.id}" data-route-link>${renderIcon('view')}View details</a>
+        <button class="table-action" type="button" data-edit-component-id="${component.id}">${renderIcon('edit')}Edit</button>
       </td>
     </tr>
   `).join('');
@@ -58,9 +60,9 @@ function renderPagination(totalItems) {
     <div class="library-pagination">
       <span>${totalItems} component${totalItems === 1 ? '' : 's'}</span>
       <div>
-        <button class="table-action" type="button" data-library-page="previous" ${libraryState.page === 1 ? 'disabled' : ''}>Previous</button>
+        <button class="table-action" type="button" data-library-page="previous" ${libraryState.page === 1 ? 'disabled' : ''}>${renderIcon('chevron-left')}Previous</button>
         <span>Page ${libraryState.page} of ${pageCount}</span>
-        <button class="table-action" type="button" data-library-page="next" ${libraryState.page === pageCount ? 'disabled' : ''}>Next</button>
+        <button class="table-action" type="button" data-library-page="next" ${libraryState.page === pageCount ? 'disabled' : ''}>Next${renderIcon('chevron-right')}</button>
       </div>
     </div>
   `;
@@ -128,6 +130,7 @@ export async function renderLibraryPage(container) {
         <section class="library-filters" aria-label="Library filters">
           <label class="library-search">
             <span class="visually-hidden">Search components</span>
+            ${renderIcon('search', { className: 'library-search__icon' })}
             <input class="field__control" type="search" placeholder="Search name, part number or location" value="${escapeHtml(libraryState.query)}" data-library-search>
           </label>
           <select class="field__control" data-library-filter="categoryId" aria-label="Filter by category">
@@ -145,7 +148,7 @@ export async function renderLibraryPage(container) {
             <option value="out" ${libraryState.stockStatus === 'out' ? 'selected' : ''}>Out of stock</option>
           </select>
         </section>
-        <button class="button" type="button" data-create-component>New component</button>
+        <button class="button" type="button" data-create-component>${renderIcon('plus')}New component</button>
       </section>
       ${visibleComponents.length ? `
         <div class="library-table-wrap">
@@ -155,7 +158,7 @@ export async function renderLibraryPage(container) {
           </table>
         </div>
         ${renderPagination(components.length)}
-      ` : '<section class="state-panel"><h3 class="state-panel__title">No components found</h3><p class="state-panel__description">Change the filters or create a new Library component.</p></section>'}
+      ` : `<section class="state-panel"><h3 class="state-panel__title">${renderIcon('search')}No components found</h3><p class="state-panel__description">Change the filters or create a new Library component.</p></section>`}
     </section>
   `;
 
@@ -169,7 +172,7 @@ export async function renderComponentDetailsPage(container, componentId) {
   const component = await getComponentDetails(componentId);
 
   if (!component) {
-    container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Component not found</h2><p class="state-panel__description">This Library record does not exist or may have been removed.</p><a class="button" href="/library" data-route-link>Back to Library</a></section>';
+    container.innerHTML = `<section class="state-panel"><h2 class="state-panel__title">${renderIcon('alert')}Component not found</h2><p class="state-panel__description">This Library record does not exist or may have been removed.</p><a class="button" href="/library" data-route-link>${renderIcon('back')}Back to Library</a></section>`;
     return;
   }
 
@@ -186,10 +189,10 @@ export async function renderComponentDetailsPage(container, componentId) {
   container.innerHTML = `
     <section class="component-details-page" aria-labelledby="component-details-title">
       <div class="component-detail-topline">
-        <a class="back-link" href="/library" data-route-link>Back to Library</a>
+        <a class="back-link" href="/library" data-route-link>${renderIcon('back')}Back to Library</a>
         <div class="component-detail-topline__actions">
-          ${component.datasheetUrl ? `<a class="button button--secondary" href="${escapeHtml(component.datasheetUrl)}" target="_blank" rel="noreferrer">Datasheet</a>` : ''}
-          <button class="button" type="button" data-edit-detail-component="${component.id}">Edit component</button>
+          ${component.datasheetUrl ? `<a class="button button--secondary" href="${escapeHtml(component.datasheetUrl)}" target="_blank" rel="noreferrer">${renderIcon('datasheet')}Datasheet${renderIcon('external-link')}</a>` : ''}
+          <button class="button" type="button" data-edit-detail-component="${component.id}">${renderIcon('edit')}Edit component</button>
         </div>
       </div>
       <div class="component-detail-workspace">

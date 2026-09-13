@@ -4,6 +4,7 @@ import { setFieldError } from './form-fields.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
 import { escapeHtml } from '../utils/dom.js';
+import { renderIcon } from './icons.js';
 
 function getFieldValue(form, name) {
   return new FormData(form).get(name);
@@ -34,8 +35,8 @@ export async function openAssignmentModal({ cabinet, drawer }) {
       <textarea class="field__control" id="assignment-note" name="note" rows="3"></textarea>
     </div>
     <div class="dialog__actions">
-      <button class="button button--secondary" type="button" data-assignment-cancel>Cancel</button>
-      <button class="button" type="submit">Assign component</button>
+      <button class="button button--secondary" type="button" data-assignment-cancel>${renderIcon('close')}Cancel</button>
+      <button class="button" type="submit">${renderIcon('assign')}Assign component</button>
     </div>
   `;
 

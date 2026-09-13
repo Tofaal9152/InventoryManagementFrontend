@@ -12,6 +12,14 @@ import { openModal } from './modal.js';
 import { showToast } from './toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatQuantity } from '../utils/formatters.js';
+import { renderIcon } from './icons.js';
+
+const operationIcons = {
+  add: 'plus',
+  take: 'take',
+  return: 'return',
+  transfer: 'transfer'
+};
 
 const operationLabels = {
   add: 'Add stock',
@@ -129,8 +137,8 @@ export async function openStockOperationModal({ operation, cabinet, drawer }) {
     </div>
     ${operationFields(operation, currentCabinet, currentDrawer, projects)}
     <div class="dialog__actions">
-      <button class="button button--secondary" type="button" data-stock-operation-cancel>Cancel</button>
-      <button class="button" type="submit">${operationLabels[operation]}</button>
+      <button class="button button--secondary" type="button" data-stock-operation-cancel>${renderIcon('close')}Cancel</button>
+      <button class="button" type="submit">${renderIcon(operationIcons[operation])}${operationLabels[operation]}</button>
     </div>
   `;
 

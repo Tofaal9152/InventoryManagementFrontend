@@ -1,3 +1,5 @@
+import { escapeHtml } from '../utils/dom.js';
+import { renderIcon } from './icons.js';
 import { openModal } from './modal.js';
 
 export function confirmAction({ title, description, confirmLabel = 'Confirm', tone = 'danger' }) {
@@ -9,10 +11,10 @@ export function confirmAction({ title, description, confirmLabel = 'Confirm', to
     actions.className = 'dialog__actions';
     cancelButton.className = 'button button--secondary';
     cancelButton.type = 'button';
-    cancelButton.textContent = 'Cancel';
+    cancelButton.innerHTML = `${renderIcon('close')}Cancel`;
     confirmButton.className = `button ${tone === 'danger' ? 'button--danger' : ''}`;
     confirmButton.type = 'button';
-    confirmButton.textContent = confirmLabel;
+    confirmButton.innerHTML = `${renderIcon(tone === 'danger' ? 'alert' : 'check')}${escapeHtml(confirmLabel)}`;
     actions.append(cancelButton, confirmButton);
 
     const { close } = openModal({

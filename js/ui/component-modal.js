@@ -6,6 +6,7 @@ import {
 import { clearFormErrors, setFieldError } from './form-fields.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
+import { renderIcon } from './icons.js';
 import { escapeHtml } from '../utils/dom.js';
 
 const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -111,8 +112,8 @@ function componentFormMarkup(component, references) {
       </div>
     </div>
     <div class="dialog__actions">
-      <button class="button button--secondary" type="button" data-component-cancel>Cancel</button>
-      <button class="button" type="submit">${component?.id ? 'Save changes' : 'Create component'}</button>
+      <button class="button button--secondary" type="button" data-component-cancel>${renderIcon('close')}Cancel</button>
+      <button class="button" type="submit">${renderIcon(component?.id ? 'check' : 'plus')}${component?.id ? 'Save changes' : 'Create component'}</button>
     </div>
   `;
 }

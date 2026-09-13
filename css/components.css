@@ -73,6 +73,7 @@
   min-height: 2.625rem;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   padding: 0.5rem 0.875rem;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -127,6 +128,7 @@
 .status-badge {
   display: inline-flex;
   align-items: center;
+  gap: 0.3125rem;
   min-height: 1.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
@@ -196,7 +198,16 @@
 }
 
 .state-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1rem;
+}
+
+.state-panel__title .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #6b7f99;
 }
 
 .state-panel__description {
@@ -236,11 +247,39 @@
 }
 
 .toast__close {
+  display: inline-flex;
+  align-items: center;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--color-text-muted);
   font-weight: 800;
+}
+
+.toast__close .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.toast__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.toast__icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  margin-top: 0.0625rem;
+}
+
+.toast--success .toast__icon {
+  color: var(--color-success);
+}
+
+.toast--error .toast__icon {
+  color: #bc3b45;
 }
 
 .dialog {
@@ -291,4 +330,21 @@
   .foundation-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+.button .icon {
+  width: 1.1em;
+  height: 1.1em;
+  opacity: 0.9;
+}
+
+.status-badge .icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
 }

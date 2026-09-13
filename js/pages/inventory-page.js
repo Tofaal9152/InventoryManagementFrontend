@@ -5,6 +5,7 @@ import { openComponentModal } from '../ui/component-modal.js';
 import { openStockOperationModal } from '../ui/stock-operation-modal.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatDateTime, formatQuantity } from '../utils/formatters.js';
+import { renderIcon, renderStatusIcon } from '../ui/icons.js';
 
 const filterDefinitions = [
   { id: 'all', label: 'All' },
@@ -71,6 +72,12 @@ function renderFilterButtons(cabinet) {
   `).join('');
 }
 
+function drawerStatusClass(drawer) {
+  if (drawer.stockState === 'stocked') return 'success';
+  if (drawer.stockState === 'low') return 'warning';
+  return drawer.stockState === 'out' ? 'danger' : 'neutral';
+}
+
 function renderDrawerCell(drawer) {
   const isSelected = drawer.id === selectedDrawerId;
   const componentName = drawer.component ? drawer.component.name : 'Empty drawer';
@@ -127,7 +134,7 @@ function renderDrawerTable(cabinet) {
       <td><button class="drawer-table__code" type="button" data-drawer-id="${drawer.id}" aria-pressed="${drawer.id === selectedDrawerId}">${drawer.code}</button></td>
       <td><strong>${drawer.component ? escapeHtml(drawer.component.name) : 'Available drawer'}</strong><span class="table-secondary">${drawer.component ? escapeHtml(drawer.component.partNumber || 'No part number') : 'No component assigned'}</span></td>
       <td>${drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : '—'}</td>
-      <td><span class="status-badge status-badge--${drawer.stockState === 'stocked' ? 'success' : drawer.stockState === 'low' ? 'warning' : drawer.stockState === 'out' ? 'danger' : 'neutral'}">${drawer.stockLabel}</span></td>
+      <td><span class="status-badge status-badge--${drawerStatusClass(drawer)}">${renderStatusIcon(drawerStatusClass(drawer))}${drawer.stockLabel}</span></td>
       <td>${drawer.sectionCount}</td>
       <td>${escapeHtml(drawer.note || '—')}</td>
     </tr>
@@ -145,7 +152,7 @@ function renderDrawerView(cabinet) {
 }
 
 function renderViewToggle() {
-  return `<div class="drawer-view-toggle" aria-label="Drawer view mode"><button type="button" class="drawer-view-toggle__button ${drawerViewMode === 'grid' ? 'is-active' : ''}" data-drawer-view="grid" aria-pressed="${drawerViewMode === 'grid'}">Grid view</button><button type="button" class="drawer-view-toggle__button ${drawerViewMode === 'table' ? 'is-active' : ''}" data-drawer-view="table" aria-pressed="${drawerViewMode === 'table'}">Table view</button></div>`;
+  return `<div class="drawer-view-toggle" aria-label="Drawer view mode"><button type="button" class="drawer-view-toggle__button ${drawerViewMode === 'grid' ? 'is-active' : ''}" data-drawer-view="grid" aria-pressed="${drawerViewMode === 'grid'}">${renderIcon('grid')}Grid view</button><button type="button" class="drawer-view-toggle__button ${drawerViewMode === 'table' ? 'is-active' : ''}" data-drawer-view="table" aria-pressed="${drawerViewMode === 'table'}">${renderIcon('table')}Table view</button></div>`;
 }
 
 function renderDrawerDetails(drawer, cabinet) {
@@ -157,14 +164,14 @@ function renderDrawerDetails(drawer, cabinet) {
           <h2>${drawer.code}</h2>
         </div>
         <div class="drawer-panel__heading-actions">
-          <span class="status-badge status-badge--neutral">Empty</span>
-          <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>Close</button>
+          <span class="status-badge status-badge--neutral">${renderStatusIcon('neutral')}Empty</span>
+          <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>${renderIcon('close')}Close</button>
         </div>
       </div>
       <div class="drawer-panel__empty">
         <h3>This drawer is available.</h3>
         <p>${escapeHtml(cabinet.name)} · ${drawer.code} has no component assigned.</p>
-        <button class="button" type="button" data-assign-drawer-id="${drawer.id}">Assign from Library</button>
+        <button class="button" type="button" data-assign-drawer-id="${drawer.id}">${renderIcon('assign')}Assign from Library</button>
       </div>
     `;
   }
@@ -185,8 +192,8 @@ function renderDrawerDetails(drawer, cabinet) {
         <h2>${drawer.code}</h2>
       </div>
       <div class="drawer-panel__heading-actions">
-        <span class="status-badge status-badge--${statusClass}">${drawer.stockLabel}</span>
-        <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>Close</button>
+        <span class="status-badge status-badge--${statusClass}">${renderStatusIcon(statusClass)}${drawer.stockLabel}</span>
+        <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>${renderIcon('close')}Close</button>
       </div>
     </div>
     <section class="component-summary">
@@ -215,10 +222,10 @@ function renderDrawerDetails(drawer, cabinet) {
     </dl>
     ${drawer.note ? `<p class="drawer-note"><strong>Note:</strong> ${escapeHtml(drawer.note)}</p>` : ''}
     <div class="drawer-actions" aria-label="Stock actions for ${drawer.code}">
-      <button class="button" type="button" data-stock-operation="add">Add</button>
-      <button class="button button--secondary" type="button" data-stock-operation="take" ${drawer.quantity <= 0 ? 'disabled' : ''}>Take</button>
-      <button class="button button--secondary" type="button" data-stock-operation="return">Return</button>
-      <button class="button button--secondary" type="button" data-stock-operation="transfer" ${drawer.quantity <= 0 ? 'disabled' : ''}>Transfer</button>
+      <button class="button" type="button" data-stock-operation="add">${renderIcon('plus')}Add</button>
+      <button class="button button--secondary" type="button" data-stock-operation="take" ${drawer.quantity <= 0 ? 'disabled' : ''}>${renderIcon('take')}Take</button>
+      <button class="button button--secondary" type="button" data-stock-operation="return">${renderIcon('return')}Return</button>
+      <button class="button button--secondary" type="button" data-stock-operation="transfer" ${drawer.quantity <= 0 ? 'disabled' : ''}>${renderIcon('transfer')}Transfer</button>
     </div>
     <section class="drawer-movements" aria-labelledby="drawer-movements-title">
       <h3 id="drawer-movements-title">Recent activity</h3>
@@ -369,7 +376,7 @@ export async function renderInventoryPage(container, { preserveSelection = false
   selectedDrawerId = selectedDrawerId || getSelectedCabinet()?.drawers[0]?.id;
 
   if (!workspace.cabinets.length) {
-    container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">No cabinets yet</h2><p class="state-panel__description">Create a cabinet to start mapping stock locations.</p><button class="button" type="button" data-create-cabinet>New cabinet</button><button class="button button--secondary" type="button" data-create-library-component>New Library component</button></section>';
+    container.innerHTML = `<section class="state-panel"><h2 class="state-panel__title">${renderIcon('cabinet')}No cabinets yet</h2><p class="state-panel__description">Create a cabinet to start mapping stock locations.</p><button class="button" type="button" data-create-cabinet>${renderIcon('plus')}New cabinet</button><button class="button button--secondary" type="button" data-create-library-component>${renderIcon('component')}New Library component</button></section>`;
     bindInventoryEvents(container);
     unsubscribeFromInventory = subscribeToInventoryChanges(() => {
       unsubscribeFromInventory?.();
@@ -384,8 +391,8 @@ export async function renderInventoryPage(container, { preserveSelection = false
       <aside class="cabinet-browser">
         <div class="cabinet-browser__title">
           <div class="cabinet-browser__actions">
-            <button class="button button--secondary" type="button" data-create-cabinet>New cabinet</button>
-            <button class="button button--secondary" type="button" data-create-library-component>New Library component</button>
+            <button class="button button--secondary" type="button" data-create-cabinet>${renderIcon('cabinet')}New cabinet</button>
+            <button class="button button--secondary" type="button" data-create-library-component>${renderIcon('component')}New Library component</button>
           </div>
         </div>
         <div class="cabinet-browser__content"></div>
