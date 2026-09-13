@@ -52,6 +52,7 @@
 
 .library-table-wrap {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -591,5 +592,14 @@
   .component-hero__stock {
     justify-items: start;
     text-align: left;
+  }
+
+  .library-table th,
+  .library-table td {
+    padding: 0.75rem 0.625rem;
+  }
+
+  .library-table--compact {
+    min-width: 26rem;
   }
 }

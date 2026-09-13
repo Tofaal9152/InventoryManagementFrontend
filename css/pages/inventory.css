@@ -237,9 +237,11 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-x: contain;
   padding-bottom: 0.375rem;
   scrollbar-color: #9db5d3 transparent;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cabinet-grid--1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
@@ -690,5 +692,39 @@
 
   .drawer-cell {
     min-height: 7.5rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .cabinet-grid--2,
+  .cabinet-grid--3,
+  .cabinet-grid--4 {
+    width: max-content;
+  }
+
+  .cabinet-grid--2 { grid-template-columns: repeat(2, 8.5rem); }
+  .cabinet-grid--3 { grid-template-columns: repeat(3, 8.5rem); }
+  .cabinet-grid--4 { grid-template-columns: repeat(4, 8.5rem); }
+  .cabinet-grid--5,
+  .cabinet-grid--6,
+  .cabinet-grid--7,
+  .cabinet-grid--8,
+  .cabinet-grid--9 {
+    grid-template-columns: repeat(var(--cabinet-grid-columns), 8.5rem);
+  }
+
+  .cabinet-grid--5 { --cabinet-grid-columns: 5; }
+  .cabinet-grid--6 { --cabinet-grid-columns: 6; }
+  .cabinet-grid--7 { --cabinet-grid-columns: 7; }
+  .cabinet-grid--8 { --cabinet-grid-columns: 8; }
+  .cabinet-grid--9 { --cabinet-grid-columns: 9; }
+
+  .cabinet-grid__empty {
+    min-width: min(100%, 16rem);
+  }
+
+  .drawer-cell__front {
+    min-height: 7rem;
+    padding: 0.625rem;
   }
 }
