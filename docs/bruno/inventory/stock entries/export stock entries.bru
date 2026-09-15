@@ -1,0 +1,43 @@
+meta {
+  name: export stock entries
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}inventory/stock-entries/export/?export=csv
+  body: none
+  auth: inherit
+}
+
+params:query {
+  export: csv
+  ~columns: location,component,part_number,quantity,estimated_value
+  ~empty: false
+  ~category: 1
+}
+
+docs {
+  ## API explanation
+  Downloads the inventory list as Excel or CSV (FR-1.10). Admin or Manager.
+  Takes every filter from "list stock entries".
+
+  `export`: `xlsx` (default) | `csv`.
+  `columns`: any of `location`, `component`, `part_number`, `category`,
+  `quantity`, `last_buying_price`, `estimated_value`, `note`, `updated_at`.
+
+
+  ## API example response
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="inventory.csv"
+
+  Location,Component,Part number,Category,Quantity,Note,Updated on
+  A11,DC Gear Motor 12V,JGB37-520,Motors,26 pcs,"Top shelf, left side",2026-09-14 22:17
+  A21,LM7805 Voltage Regulator,LM7805,Voltage Regulators,58 pcs,,2026-09-14 22:17
+  B21,Hookup Wire 22AWG Red,UL1007-22-RED,Wire & Cable,18 m,,2026-09-14 22:17
+  B22,DC Gear Motor 12V,JGB37-520,Motors,10 pcs,,2026-09-14 22:17
+}
+
+settings {
+  encodeUrl: true
+}

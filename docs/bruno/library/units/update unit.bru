@@ -1,0 +1,48 @@
+meta {
+  name: update unit
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}library/units/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 8
+}
+
+body:json {
+  {
+    // All optional on PATCH.
+    "name": "Packets"
+
+    // "symbol": "pkt"
+    // "allows_fraction": false
+  }
+}
+
+docs {
+  ## API explanation
+  Edits a unit. Admin or Manager. Turning `allows_fraction` off is rejected
+  while any stock, minimum quantity or requisition in this unit has decimals.
+  Audited.
+
+
+  ## API example response
+  {
+    "id": 8,
+    "name": "Packets",
+    "symbol": "pack",
+    "allows_fraction": false,
+    "component_count": 0,
+    "created_at": "2026-09-14T22:17:36.335097+06:00",
+    "updated_at": "2026-09-14T22:17:36.340707+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

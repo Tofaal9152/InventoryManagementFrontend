@@ -159,7 +159,15 @@
 
 .field {
   display: grid;
+  /* Rows size to their content. Without this a field that is shorter than its
+     neighbour (one missing an error slot, say) stretches its control to fill
+     the row, so inputs beside each other end up different heights. */
+  align-content: start;
   gap: 0.375rem;
+}
+
+.field__control {
+  align-self: start;
 }
 
 .field__label {
@@ -179,6 +187,28 @@
 
 .field__control[aria-invalid="true"] {
   border-color: #bf3c46;
+}
+
+.field__checkbox {
+  display: flex;
+  min-height: 2.625rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: #34435a;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.field__checkbox input {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  flex: 0 0 auto;
+  accent-color: var(--color-primary);
+}
+
+.field__hint {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
 }
 
 .field__error {
@@ -208,6 +238,41 @@
   width: 1.125rem;
   height: 1.125rem;
   color: #6b7f99;
+}
+
+.state-panel--error {
+  border-style: solid;
+  border-color: #eec2c5;
+  background: #fffafa;
+}
+
+.state-panel__skeleton {
+  display: grid;
+  width: min(22rem, 100%);
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.state-panel__skeleton span {
+  height: 0.625rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e7edf5 0%, #f4f7fb 50%, #e7edf5 100%);
+  background-size: 200% 100%;
+  animation: state-panel-shimmer 1.4s ease-in-out infinite;
+}
+
+.state-panel__skeleton span:nth-child(2) { width: 82%; animation-delay: 120ms; }
+.state-panel__skeleton span:nth-child(3) { width: 64%; animation-delay: 240ms; }
+
+@keyframes state-panel-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -40% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-panel__skeleton span {
+    animation: none;
+  }
 }
 
 .state-panel__description {
@@ -284,7 +349,7 @@
 
 .dialog {
   width: min(42rem, calc(100vw - 2rem));
-  min-height: min(32rem, calc(100dvh - 2rem));
+  /* Height follows the content: a confirm is three lines, a form is not. */
   max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 0;

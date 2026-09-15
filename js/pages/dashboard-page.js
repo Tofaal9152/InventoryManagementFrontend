@@ -1,6 +1,7 @@
 import { getDashboardData } from '../services/report-service.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters.js';
+import { renderErrorState, renderLoadingState } from '../ui/async-state.js';
 
 let dashboardFilter = { type: 'all', componentId: 'all' };
 let dashboardController;
@@ -29,8 +30,19 @@ export function destroyDashboardPage() {
 
 export async function renderDashboardPage(container) {
   destroyDashboardPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading dashboard…</h2></section>';
-  const data = await getDashboardData();
+  renderLoadingState(container, { title: 'Loading dashboard…', description: 'Preparing stock summary and recent activity.' });
+
+  let data;
+  try {
+    data = await getDashboardData();
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load the dashboard',
+      onRetry: () => renderDashboardPage(container)
+    });
+    return;
+  }
   const cards = [
     ['Components', data.componentCount], ['Total stock', data.totalStock], ['Stock value', formatCurrency(data.totalValue)], ['Low stock', data.lowStockCount], ['Out of stock', data.outOfStockCount], ['Pending requisitions', data.pendingRequisitionCount], ['Drawer utilisation', `${data.drawerUtilisation}%`]
   ];

@@ -1,0 +1,47 @@
+meta {
+  name: get access token
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}get-access-token/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // The refresh token from "login" (stored in {{refreshToken}} by its script). Required.
+    "refresh": "{{refreshToken}}"
+  }
+}
+
+docs {
+  ## API explanation
+  Exchanges a refresh token for a new access token (simplejwt
+  `TokenRefreshView`). Public. `ROTATE_REFRESH_TOKENS` is off, so the refresh
+  token stays valid and only `access` is returned. Both tokens live 30 days
+  (`SIMPLE_JWT` in settings).
+
+  `rest-auth/token/refresh/` (dj-rest-auth's own route) behaves the same.
+
+
+  ## API example response
+  {
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+
+  Invalid, expired or blacklisted refresh token (401):
+  {
+    "success": false,
+    "message": "Token is invalid or expired"
+  }
+
+  ## Changelog
+  - 2026-09-14: Token errors now return just the error text in `message` (previously a second `(code) token_not_valid` line was appended).
+}
+
+settings {
+  encodeUrl: true
+}

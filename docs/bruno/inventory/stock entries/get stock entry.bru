@@ -1,0 +1,41 @@
+meta {
+  name: get stock entry
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}inventory/stock-entries/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  ## API explanation
+  One stock entry. Any role.
+
+  ## API example response
+  {
+    "id": 1,
+    "location": "A11",
+    "chamber": 1,
+    "component": {
+      "id": 1,
+      "name": "DC Gear Motor 12V",
+      "part_number": "JGB37-520",
+      "unit_symbol": "pcs"
+    },
+    "quantity": "26.000",
+    "note": "",
+    "created_at": "2026-09-14T22:17:36.591057+06:00",
+    "updated_at": "2026-09-14T22:17:36.686376+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

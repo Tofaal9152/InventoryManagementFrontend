@@ -1,0 +1,39 @@
+meta {
+  name: label sheet
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}inventory/labels/?drawer=6
+  body: none
+  auth: inherit
+}
+
+params:query {
+  drawer: 6
+}
+
+docs {
+  ## API explanation
+  A printable A4 HTML page with one label per active chamber: QR code,
+  location code and current component (FR-7.8). Any role. `drawer` limits it
+  to one drawer. The QR codes encode each chamber's `qr_url`. Open it in a
+  browser and print.
+
+
+  ## API example response
+  Content-Type: text/html; charset=utf-8
+
+  A full HTML page with A4 print styles; its body has one label per chamber:
+
+  <div class="label">
+  <svg ...QR code...></svg>
+  <div class="code">B21</div>
+  <div class="component">Hookup Wire 22AWG Red</div>
+  </div>
+}
+
+settings {
+  encodeUrl: true
+}

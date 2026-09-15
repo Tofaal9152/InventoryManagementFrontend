@@ -1,0 +1,45 @@
+meta {
+  name: deactivate user
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}administrator/users/:id/deactivate/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 4
+}
+
+docs {
+  ## API explanation
+  Deactivates a user: they can no longer log in, and their existing access
+  tokens stop working immediately. **Admin only**. You can't deactivate
+  yourself. Audited as `USER_DEACTIVATED`.
+
+
+  ## API example response
+  {
+    "success": true,
+    "message": "User deactivated.",
+    "data": {
+      "id": 4,
+      "username": "former.tech",
+      "email": "former.tech@example.com",
+      "first_name": "",
+      "last_name": "",
+      "role": "STAFF",
+      "role_display": "Staff",
+      "is_active": false,
+      "date_joined": "2026-09-14T22:17:36.296314+06:00",
+      "last_login": null
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

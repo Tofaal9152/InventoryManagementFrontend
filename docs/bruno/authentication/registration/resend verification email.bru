@@ -1,0 +1,34 @@
+meta {
+  name: resend verification email
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}rest-auth/registration/resend-email/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // The unverified account's email. Required.
+    "email": "new.member@example.com"
+  }
+}
+
+docs {
+  ## API explanation
+  Re-sends the verification e-mail for an unverified address. Public. Always
+  returns 200, whether or not the address exists or is already verified.
+
+
+  ## API example response
+  {
+    "detail": "ok"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

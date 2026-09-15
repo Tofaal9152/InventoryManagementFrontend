@@ -1,0 +1,36 @@
+meta {
+  name: delete component
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{base_url}}library/components/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 5
+}
+
+docs {
+  ## API explanation
+  Hard-deletes a component that has never been stocked. Admin or Manager.
+  Blocked once it has stock entries or movement history (FR-1.2): archive it
+  instead. Audited.
+
+
+  ## API example response
+  204 No Content (empty body)
+
+  Component has stock (400):
+  {
+    "success": false,
+    "message": "This component still has stock entries. Archive it instead, or remove its stock first."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,63 @@
+meta {
+  name: list categories
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}library/categories/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~search: motor
+  ~ordering: name
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Categories with `component_count` and `total_quantity` (summed stock of
+  their components, FR-2.3). Any role can read. To open a category's components
+  (FR-2.4), call components/list components with `?category=<id>`.
+
+  Filters: `search` (name). Sorting: `ordering` = `name` | `component_count` |
+  `total_quantity`, prefix `-` for descending.
+
+
+  ## API example response
+  {
+    "count": 4,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 4,
+        "name": "Miscellaneous",
+        "description": "Parts without a better home",
+        "component_count": 1,
+        "total_quantity": "0.000",
+        "created_at": "2026-09-14T22:17:36.322699+06:00",
+        "updated_at": "2026-09-14T22:17:36.326993+06:00"
+      },
+      {
+        "id": 1,
+        "name": "Motors",
+        "description": "DC, servo and stepper motors",
+        "component_count": 2,
+        "total_quantity": "36.000",
+        "created_at": "2026-09-14T22:17:36.308380+06:00",
+        "updated_at": "2026-09-14T22:17:36.308384+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

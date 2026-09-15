@@ -1,0 +1,58 @@
+meta {
+  name: get movement
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}inventory/movements/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 5
+}
+
+docs {
+  ## API explanation
+  One movement. Staff can only open their own (404 otherwise).
+
+  ## API example response
+  {
+    "id": 5,
+    "movement_type": "TAKE",
+    "movement_type_display": "Take",
+    "component": {
+      "id": 1,
+      "name": "DC Gear Motor 12V",
+      "part_number": "JGB37-520",
+      "unit_symbol": "pcs"
+    },
+    "source_location": "A11",
+    "destination_location": null,
+    "quantity": "6.000",
+    "quantity_before": null,
+    "quantity_after": null,
+    "unit_price": null,
+    "delivery_charge": null,
+    "performed_by": {
+      "id": 3,
+      "username": "nadia.islam",
+      "email": "nadia.islam@example.com",
+      "role": "STAFF"
+    },
+    "project": {
+      "id": 1,
+      "name": "Line Follower Robot",
+      "status": "ACTIVE"
+    },
+    "related_movement": null,
+    "note": "Drive motors for chassis v2",
+    "created_at": "2026-09-14T22:17:36.636966+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,8 +1,13 @@
-import { getProjectDetails, listProjectSummaries } from '../services/project-service.js';
+import { getProjectDetails, listProjectSummaries, setProjectClosed } from '../services/project-service.js';
 import { openCreateProjectModal } from '../ui/project-modal.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters.js';
 import { renderIcon, renderStatusIcon } from '../ui/icons.js';
+import { canManageProjects } from '../services/permission-service.js';
+import { renderErrorState, renderLoadingState } from '../ui/async-state.js';
+import { confirmAction } from '../ui/confirm-dialog.js';
+import { showToast } from '../ui/toast.js';
+import { APP_CONFIG } from '../config.js';
 
 let projectsController;
 
@@ -13,10 +18,21 @@ export function destroyProjectsPage() {
 
 export async function renderProjectsPage(container) {
   destroyProjectsPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading projects…</h2></section>';
-  const projects = await listProjectSummaries();
+  renderLoadingState(container, { title: 'Loading projects…', description: 'Preparing project records.' });
+
+  let projects;
+  try {
+    projects = await listProjectSummaries();
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load projects',
+      onRetry: () => renderProjectsPage(container)
+    });
+    return;
+  }
   const cards = projects.map((project) => `<a class="project-card" href="/projects/${project.id}" data-route-link><span class="status-badge status-badge--${project.status === 'Active' ? 'success' : 'neutral'}">${renderStatusIcon(project.status === 'Active' ? 'success' : 'neutral')}${project.status}</span><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(project.description || 'No description')}</p><div><strong>${project.takeCount}</strong><span>take operations</span></div><small>${formatCurrency(project.estimatedValue)} estimated consumption</small></a>`).join('');
-  container.innerHTML = `<section class="overview-page" aria-label="Projects"><div class="page-actions"><button class="button" type="button" data-create-project>${renderIcon('plus')}New project</button></div><div class="project-grid">${cards}</div></section>`;
+  container.innerHTML = `<section class="overview-page" aria-label="Projects"><div class="page-actions">${canManageProjects() ? `<button class="button" type="button" data-create-project>${renderIcon('plus')}New project</button>` : ''}</div><div class="project-grid">${cards}</div></section>`;
   projectsController = new AbortController();
   container.addEventListener('click', async (event) => {
     if (!event.target.closest('[data-create-project]')) return;
@@ -24,13 +40,60 @@ export async function renderProjectsPage(container) {
   }, { signal: projectsController.signal });
 }
 
+async function handleProjectStatusToggle(container, project, button) {
+  const closing = button.dataset.closed !== 'true';
+  const confirmed = await confirmAction({
+    title: closing ? `Close ${project.name}?` : `Reopen ${project.name}?`,
+    description: closing
+      ? 'Stock can no longer be taken against this project. Its consumption history and estimated value stay.'
+      : 'The project becomes selectable again when taking stock.',
+    confirmLabel: closing ? 'Close project' : 'Reopen project',
+    tone: closing ? 'danger' : 'default'
+  });
+  if (!confirmed) return;
+
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+
+  try {
+    await setProjectClosed(project.id, closing);
+    showToast(closing ? 'Project closed.' : 'Project reopened.');
+    await renderProjectDetailsPage(container, project.id);
+  } catch (error) {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    showToast(error?.message || 'The project could not be updated.', { type: 'error' });
+  }
+}
+
 export async function renderProjectDetailsPage(container, projectId) {
   destroyProjectsPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading project…</h2></section>';
-  const project = await getProjectDetails(projectId);
+  renderLoadingState(container, { title: 'Loading project…', description: 'Preparing project details.' });
+
+  let project;
+  try {
+    project = await getProjectDetails(projectId);
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load this project',
+      onRetry: () => renderProjectDetailsPage(container, projectId)
+    });
+    return;
+  }
   if (!project) { container.innerHTML = `<section class="state-panel"><h2 class="state-panel__title">${renderIcon('alert')}Project not found</h2><a class="button" href="/projects" data-route-link>${renderIcon('back')}Back to Projects</a></section>`; return; }
   const consumptionRows = project.consumption.length ? project.consumption.map((item) => `<tr><td>${escapeHtml(item.component?.name || 'Component')}</td><td>${formatQuantity(item.quantity, item.component?.unit?.symbol)}</td><td>${formatCurrency(item.estimatedValue)}</td></tr>`).join('') : '<tr><td colspan="3">No components consumed for this project yet.</td></tr>';
   const historyRows = project.movements.length ? project.movements.map((item) => `<tr><td>${escapeHtml(item.note || 'Take')}</td><td>${formatQuantity(item.quantity)}</td><td>${formatDateTime(item.timestamp)}</td></tr>`).join('') : '<tr><td colspan="3">No project activity yet.</td></tr>';
   const total = project.consumption.reduce((sum, item) => sum + item.estimatedValue, 0);
-  container.innerHTML = `<section class="component-details-page"><a class="back-link" href="/projects" data-route-link>${renderIcon('back')}Back to Projects</a><header class="overview-header"><div><p class="eyebrow">${project.status}</p><h2>${escapeHtml(project.name)}</h2><p>${escapeHtml(project.description || 'No description')}</p></div><div class="project-total"><strong>${formatCurrency(total)}</strong><span>estimated consumption</span></div></header><section class="detail-card detail-card--wide"><h3>Components consumed</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Component</th><th>Quantity</th><th>Estimated value</th></tr></thead><tbody>${consumptionRows}</tbody></table></div></section><section class="detail-card detail-card--wide"><h3>Project activity</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Note</th><th>Quantity</th><th>When</th></tr></thead><tbody>${historyRows}</tbody></table></div></section></section>`;
+  container.innerHTML = `<section class="component-details-page"><a class="back-link" href="/projects" data-route-link>${renderIcon('back')}Back to Projects</a><header class="overview-header"><div><p class="eyebrow">${project.status}</p><h2>${escapeHtml(project.name)}</h2><p>${escapeHtml(project.description || 'No description')}</p></div><div class="project-total"><strong>${formatCurrency(total)}</strong><span>estimated consumption</span>${
+  canManageProjects() && APP_CONFIG.mode !== 'demo'
+    ? `<button class="button button--secondary" type="button" data-toggle-project-status data-closed="${project.isClosed}">${renderIcon(project.isClosed ? 'refresh' : 'close')}${project.isClosed ? 'Reopen project' : 'Close project'}</button>`
+    : ''
+}</div></header><section class="detail-card detail-card--wide"><h3>Components consumed</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Component</th><th>Quantity</th><th>Estimated value</th></tr></thead><tbody>${consumptionRows}</tbody></table></div></section><section class="detail-card detail-card--wide"><h3>Project activity</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Note</th><th>Quantity</th><th>When</th></tr></thead><tbody>${historyRows}</tbody></table></div></section></section>`;
+
+  projectsController = new AbortController();
+  container.addEventListener('click', async (event) => {
+    const toggle = event.target.closest('[data-toggle-project-status]');
+    if (toggle) await handleProjectStatusToggle(container, project, toggle);
+  }, { signal: projectsController.signal });
 }

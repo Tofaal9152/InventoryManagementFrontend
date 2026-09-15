@@ -1,0 +1,36 @@
+meta {
+  name: delete stock entry
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{base_url}}inventory/stock-entries/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 4
+}
+
+docs {
+  ## API explanation
+  Releases a chamber by deleting its stock entry (FR-6.8). Admin or Manager.
+  Only allowed once the quantity is 0: take, transfer or adjust the stock out
+  first. Movement history is kept. Audited.
+
+
+  ## API example response
+  204 No Content (empty body)
+
+  Entry still holds stock (400):
+  {
+    "success": false,
+    "message": "A11 still holds 26 pcs. Stock entries can only be deleted once their quantity is zero; take, transfer or adjust the stock first."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

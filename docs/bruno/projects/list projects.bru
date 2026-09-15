@@ -1,0 +1,74 @@
+meta {
+  name: list projects
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}projects/?status=ACTIVE
+  body: none
+  auth: inherit
+}
+
+params:query {
+  status: ACTIVE
+  ~search: robot
+  ~ordering: name
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Projects (FR-8.1). Any role can read, so Staff can tag takes and
+  requisitions. Filters: `status` (`ACTIVE` | `CLOSED`; only ACTIVE
+  projects can be selected on new operations), `search` (name or
+  description). Sorting: `ordering` = `name` | `created_at` | `status`.
+
+
+  ## API example response
+  {
+    "count": 2,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 1,
+        "name": "Line Follower Robot",
+        "description": "Competition line follower, v2 chassis",
+        "status": "ACTIVE",
+        "status_display": "Active",
+        "created_by": {
+          "id": 2,
+          "username": "karim.hossain",
+          "email": "karim.hossain@example.com",
+          "role": "MANAGER"
+        },
+        "created_at": "2026-09-14T22:17:36.530828+06:00",
+        "updated_at": "2026-09-14T22:17:36.542562+06:00"
+      },
+      {
+        "id": 2,
+        "name": "Solar Charge Controller",
+        "description": "",
+        "status": "ACTIVE",
+        "status_display": "Active",
+        "created_by": {
+          "id": 2,
+          "username": "karim.hossain",
+          "email": "karim.hossain@example.com",
+          "role": "MANAGER"
+        },
+        "created_at": "2026-09-14T22:17:36.536560+06:00",
+        "updated_at": "2026-09-14T22:17:36.536566+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

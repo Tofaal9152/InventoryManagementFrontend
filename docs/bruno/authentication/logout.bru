@@ -1,0 +1,44 @@
+meta {
+  name: logout
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}rest-auth/logout/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // The refresh token from "login". Required: logout blacklists it.
+    "refresh": "{{refreshToken}}"
+  }
+}
+
+docs {
+  ## API explanation
+  Logs out by blacklisting the given refresh token (dj-rest-auth
+  `LogoutView`; `token_blacklist` is installed). The access token isn't
+  revoked; it simply expires. A blacklisted refresh token can no longer be
+  used at "get access token".
+
+  Note: the missing-token error comes straight from dj-rest-auth and is not
+  wrapped in the usual `{"success": false, "message": ...}` shape.
+
+
+  ## API example response
+  {
+    "detail": "Successfully logged out."
+  }
+
+  `refresh` missing from the body (401):
+  {
+    "detail": "Refresh token was not included in request data."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

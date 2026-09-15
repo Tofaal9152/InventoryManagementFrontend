@@ -1,0 +1,41 @@
+meta {
+  name: create category
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}library/categories/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Unique name (case-insensitive), max 100 characters. Required.
+    "name": "Motors",
+
+    // Optional.
+    "description": "DC, servo and stepper motors"
+  }
+}
+
+docs {
+  ## API explanation
+  Creates a category (FR-2.1). Admin or Manager. Names are unique (case-insensitive). Audited.
+
+  ## API example response
+  {
+    "id": 1,
+    "name": "Motors",
+    "description": "DC, servo and stepper motors",
+    "component_count": 0,
+    "total_quantity": "0.000",
+    "created_at": "2026-09-14T22:17:36.308380+06:00",
+    "updated_at": "2026-09-14T22:17:36.308384+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

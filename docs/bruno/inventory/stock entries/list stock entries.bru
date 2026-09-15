@@ -1,0 +1,79 @@
+meta {
+  name: list stock entries
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}inventory/stock-entries/?empty=false
+  body: none
+  auth: inherit
+}
+
+params:query {
+  empty: false
+  ~component: 1
+  ~category: 1
+  ~location: A1
+  ~search: motor
+  ~ordering: location
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  The inventory list: one row per occupied chamber (FR-6.1). Any role.
+
+  Filters: `component`, `category`, `location` (code contains), `search`
+  (component name, part number or code), `empty` (`true`: quantity 0 only,
+  `false`: in stock only). Sorting: `ordering` = `location` | `component` |
+  `quantity` | `updated_at`.
+
+
+  ## API example response
+  {
+    "count": 4,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 1,
+        "location": "A11",
+        "chamber": 1,
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "26.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.591057+06:00",
+        "updated_at": "2026-09-14T22:17:36.686376+06:00"
+      },
+      {
+        "id": 2,
+        "location": "A21",
+        "chamber": 5,
+        "component": {
+          "id": 2,
+          "name": "LM7805 Voltage Regulator",
+          "part_number": "LM7805",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "58.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.612275+06:00",
+        "updated_at": "2026-09-14T22:17:36.698891+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,121 @@
+meta {
+  name: list requisitions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}requisitions/?ordering=-created_at
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ordering: -created_at
+  ~status: PENDING
+  ~mine: true
+  ~requested_by: 3
+  ~project: 1
+  ~component: 2
+  ~search: esp32
+  ~date_from: 2026-09-01
+  ~date_to: 2026-09-30
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Requisitions (FR-4.4) with the request ID (`reference`), component or
+  requested part name, quantity, requester, project, status, `created_at`,
+  `needed_by` and `days_in_current_status`. Any role.
+
+  Filters: `status`, `requested_by` (user id), `mine` (`true`: only yours),
+  `project`, `component`, `search` (part name, component name or part number),
+  `date_from` / `date_to` (created date). Sorting: `ordering` = `created_at` |
+  `needed_by` | `status` | `status_changed_at` (default `-created_at`).
+
+
+  ## API example response
+  {
+    "count": 3,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 3,
+        "reference": "REQ-000003",
+        "component": null,
+        "requested_part_name": "5A glass fuses",
+        "part_name": "5A glass fuses",
+        "quantity": "20.000",
+        "unit": {
+          "id": 1,
+          "name": "Pieces",
+          "symbol": "pcs",
+          "allows_fraction": false
+        },
+        "project": null,
+        "needed_by": null,
+        "reason": "",
+        "status": "CANCELLED",
+        "status_display": "Cancelled",
+        "status_changed_at": "2026-09-14T22:17:36.926940+06:00",
+        "days_in_current_status": 0,
+        "requested_by": {
+          "id": 3,
+          "username": "nadia.islam",
+          "email": "nadia.islam@example.com",
+          "role": "STAFF"
+        },
+        "created_at": "2026-09-14T22:17:36.916819+06:00",
+        "updated_at": "2026-09-14T22:17:36.926983+06:00"
+      },
+      {
+        "id": 2,
+        "reference": "REQ-000002",
+        "component": {
+          "id": 9,
+          "name": "ESP32-DevKitC V4",
+          "part_number": "ESP32-DEVKITC-V4",
+          "unit_symbol": "pcs"
+        },
+        "requested_part_name": "ESP32-DevKitC V4",
+        "part_name": "ESP32-DevKitC V4",
+        "quantity": "5.000",
+        "unit": {
+          "id": 1,
+          "name": "Pieces",
+          "symbol": "pcs",
+          "allows_fraction": false
+        },
+        "project": {
+          "id": 1,
+          "name": "Line Follower Robot",
+          "status": "ACTIVE"
+        },
+        "needed_by": "2026-10-01",
+        "reason": "Wireless telemetry for the robot",
+        "status": "RECEIVED",
+        "status_display": "Received",
+        "status_changed_at": "2026-09-14T22:17:36.992999+06:00",
+        "days_in_current_status": 0,
+        "requested_by": {
+          "id": 3,
+          "username": "nadia.islam",
+          "email": "nadia.islam@example.com",
+          "role": "STAFF"
+        },
+        "created_at": "2026-09-14T22:17:36.906024+06:00",
+        "updated_at": "2026-09-14T22:17:36.993032+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

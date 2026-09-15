@@ -1,0 +1,108 @@
+meta {
+  name: raise requisition for a library component
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}requisitions/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Library component id. Required unless requested_part_name is given.
+    "component": 2,
+
+    // Quantity in the component's unit, > 0. Required.
+    "quantity": "100",
+
+    // Active project id. Optional.
+    "project": 2,
+
+    // Date the part is needed by (YYYY-MM-DD). Optional.
+    "needed_by": "2026-10-15",
+
+    // Optional.
+    "reason": "Running low for the charge controller build"
+  }
+}
+
+docs {
+  ## API explanation
+  Raises a requisition for a component that's already in the library (FR-4.1).
+  Any role. The unit comes from the component. Starts as `PENDING`, with the
+  caller as requester.
+
+
+  ## API example response
+  {
+    "id": 1,
+    "reference": "REQ-000001",
+    "component": {
+      "id": 2,
+      "name": "LM7805 Voltage Regulator",
+      "part_number": "LM7805",
+      "unit_symbol": "pcs"
+    },
+    "requested_part_name": "",
+    "part_name": "LM7805 Voltage Regulator",
+    "quantity": "100.000",
+    "unit": {
+      "id": 1,
+      "name": "Pieces",
+      "symbol": "pcs",
+      "allows_fraction": false
+    },
+    "project": {
+      "id": 2,
+      "name": "Solar Charge Controller",
+      "status": "ACTIVE"
+    },
+    "needed_by": "2026-10-15",
+    "reason": "Running low for the charge controller build",
+    "status": "PENDING",
+    "status_display": "Pending",
+    "status_changed_at": "2026-09-14T22:17:36.892816+06:00",
+    "days_in_current_status": 0,
+    "requested_by": {
+      "id": 3,
+      "username": "nadia.islam",
+      "email": "nadia.islam@example.com",
+      "role": "STAFF"
+    },
+    "created_at": "2026-09-14T22:17:36.892899+06:00",
+    "updated_at": "2026-09-14T22:17:36.892904+06:00",
+    "allowed_transitions": [
+      "APPROVED",
+      "CANCELLED",
+      "REJECTED"
+    ],
+    "status_history": [
+      {
+        "id": 1,
+        "from_status": "",
+        "to_status": "PENDING",
+        "changed_by": {
+          "id": 3,
+          "username": "nadia.islam",
+          "email": "nadia.islam@example.com",
+          "role": "STAFF"
+        },
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.895452+06:00"
+      }
+    ]
+  }
+
+  Neither component nor part name (400):
+  {
+    "success": false,
+    "message": "Choose a component from the library, or enter requested_part_name for a part that isn't in the library yet."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

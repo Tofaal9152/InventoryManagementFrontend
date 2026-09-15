@@ -1,0 +1,35 @@
+meta {
+  name: get unit
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}library/units/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 8
+}
+
+docs {
+  ## API explanation
+  One unit. Any role.
+
+  ## API example response
+  {
+    "id": 8,
+    "name": "Packs",
+    "symbol": "pack",
+    "allows_fraction": false,
+    "component_count": 0,
+    "created_at": "2026-09-14T22:17:36.335097+06:00",
+    "updated_at": "2026-09-14T22:17:36.335105+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

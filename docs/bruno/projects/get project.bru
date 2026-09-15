@@ -1,0 +1,114 @@
+meta {
+  name: get project
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}projects/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  ## API explanation
+  Project detail (FR-8.4). Any role. `consumption` lists each component with
+  quantity taken, returned and net consumed, plus estimated value (net
+  quantity x the component's last buying price). Also shows
+  `total_estimated_value` and the linked `requisitions`.
+
+
+  ## API example response
+  {
+    "id": 1,
+    "name": "Line Follower Robot",
+    "description": "Competition line follower, v2 chassis",
+    "status": "ACTIVE",
+    "status_display": "Active",
+    "created_by": {
+      "id": 2,
+      "username": "karim.hossain",
+      "email": "karim.hossain@example.com",
+      "role": "MANAGER"
+    },
+    "created_at": "2026-09-14T22:17:36.530828+06:00",
+    "updated_at": "2026-09-14T22:17:36.542562+06:00",
+    "consumption": [
+      {
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity_taken": "6.000",
+        "quantity_returned": "2.000",
+        "quantity": "4.000",
+        "last_buying_price": "450.00",
+        "estimated_value": "1800.00"
+      },
+      {
+        "component": {
+          "id": 3,
+          "name": "Hookup Wire 22AWG Red",
+          "part_number": "UL1007-22-RED",
+          "unit_symbol": "m"
+        },
+        "quantity_taken": "12.500",
+        "quantity_returned": "0.000",
+        "quantity": "12.500",
+        "last_buying_price": "8.50",
+        "estimated_value": "106.25"
+      }
+    ],
+    "total_estimated_value": "1906.25",
+    "requisitions": [
+      {
+        "id": 2,
+        "reference": "REQ-000002",
+        "component": {
+          "id": 9,
+          "name": "ESP32-DevKitC V4",
+          "part_number": "ESP32-DEVKITC-V4",
+          "unit_symbol": "pcs"
+        },
+        "requested_part_name": "ESP32-DevKitC V4",
+        "part_name": "ESP32-DevKitC V4",
+        "quantity": "5.000",
+        "unit": {
+          "id": 1,
+          "name": "Pieces",
+          "symbol": "pcs",
+          "allows_fraction": false
+        },
+        "project": {
+          "id": 1,
+          "name": "Line Follower Robot",
+          "status": "ACTIVE"
+        },
+        "needed_by": "2026-10-01",
+        "reason": "Wireless telemetry for the robot",
+        "status": "RECEIVED",
+        "status_display": "Received",
+        "status_changed_at": "2026-09-14T22:17:36.992999+06:00",
+        "days_in_current_status": 0,
+        "requested_by": {
+          "id": 3,
+          "username": "nadia.islam",
+          "email": "nadia.islam@example.com",
+          "role": "STAFF"
+        },
+        "created_at": "2026-09-14T22:17:36.906024+06:00",
+        "updated_at": "2026-09-14T22:17:36.993032+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

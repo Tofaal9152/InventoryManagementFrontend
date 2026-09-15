@@ -13,6 +13,11 @@ import { showToast } from '../ui/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatDate, formatDateTime, formatQuantity } from '../utils/formatters.js';
 import { renderIcon, renderStatusIcon } from '../ui/icons.js';
+import { canDecideRequisitions, canRaiseRequisitions } from '../services/permission-service.js';
+import { APP_CONFIG } from '../config.js';
+import { confirmAction } from '../ui/confirm-dialog.js';
+import { renderErrorState, renderLoadingState } from '../ui/async-state.js';
+import { openReceiveRequisitionModal } from '../ui/receive-requisition-modal.js';
 
 let requisitionController;
 let requisitionFilter = 'all';
@@ -71,7 +76,10 @@ async function openRequisitionForm(container) {
 }
 
 async function openStatusForm(container, requisition) {
-  const allowedStatuses = getAllowedRequisitionStatuses(requisition.status);
+  // In live mode the server already said which moves this user may make.
+  const allowedStatuses = APP_CONFIG.mode === 'demo'
+    ? getAllowedRequisitionStatuses(requisition.status)
+    : getAllowedRequisitionStatuses(requisition);
   const form = document.createElement('form');
   form.noValidate = true;
   form.innerHTML = `<div class="field"><label class="field__label" for="requisition-status">New status</label><select class="field__control" id="requisition-status" name="status">${allowedStatuses.map((status) => `<option value="${status}">${status}</option>`).join('')}</select></div><div class="field"><label class="field__label" for="requisition-status-note">Note <span aria-hidden="true">(optional)</span></label><textarea class="field__control" id="requisition-status-note" name="note" rows="3"></textarea></div><div class="dialog__actions"><button class="button button--secondary" type="button" data-status-cancel>${renderIcon('close')}Cancel</button><button class="button" type="submit">${renderIcon('status')}Update status</button></div>`;
@@ -82,12 +90,29 @@ async function openStatusForm(container, requisition) {
     event.preventDefault();
     const submitButton = form.querySelector('[type="submit"]');
     submitButton.disabled = true;
+    const values = Object.fromEntries(new FormData(form));
+    const confirmed = await confirmAction({
+      title: `Move ${requisition.reference || requisition.id} to ${values.status}?`,
+      description: values.status === 'Cancelled' || values.status === 'Rejected'
+        ? 'This ends the requisition. The history and your note are kept.'
+        : 'The change is recorded in the status history with your note.',
+      confirmLabel: `Set ${values.status}`,
+      tone: values.status === 'Cancelled' || values.status === 'Rejected' ? 'danger' : 'default'
+    });
+    if (!confirmed) {
+      submitButton.disabled = false;
+      return;
+    }
+
     try {
-      await updateRequisitionStatus({ requisitionId: requisition.id, ...Object.fromEntries(new FormData(form)) });
+      await updateRequisitionStatus({ requisitionId: requisition.id, ...values });
       modal.close('saved');
       showToast('Requisition status updated.');
       await renderRequisitionDetailsPage(container, requisition.id);
-    } catch (error) { showToast(error.message || 'The status could not be updated.', { type: 'error' }); } finally { submitButton.disabled = false; }
+    } catch (error) {
+      showToast(error.message || 'The status could not be updated.', { type: 'error' });
+      submitButton.disabled = false;
+    }
   });
 }
 
@@ -98,10 +123,21 @@ export function destroyRequisitionsPage() {
 
 export async function renderRequisitionsPage(container) {
   destroyRequisitionsPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading requisitions…</h2></section>';
-  const requisitions = await listRequisitions({ status: requisitionFilter });
+  renderLoadingState(container, { title: 'Loading requisitions…', description: 'Preparing requests.' });
+
+  let requisitions;
+  try {
+    requisitions = await listRequisitions({ status: requisitionFilter });
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load requisitions',
+      onRetry: () => renderRequisitionsPage(container)
+    });
+    return;
+  }
   const rows = requisitions.length ? requisitions.map((requisition) => `<tr><td><a class="component-name-link" href="/requisitions/${requisition.id}" data-route-link>${requisition.id}</a></td><td>${escapeHtml(requisitionName(requisition))}</td><td>${formatQuantity(requisition.quantity, requisition.unit?.symbol)}</td><td>${escapeHtml(requisition.requester?.name || '—')}</td><td>${escapeHtml(requisition.project?.name || '—')}</td><td><span class="status-badge status-badge--${statusClass(requisition.status)}">${renderStatusIcon(statusClass(requisition.status))}${requisition.status}</span></td><td>${formatDate(requisition.createdOn)}</td><td>${formatDate(requisition.neededBy)}</td><td>${requisition.daysInStatus} day${requisition.daysInStatus === 1 ? '' : 's'}</td></tr>`).join('') : '<tr><td colspan="9">No requisitions match this filter.</td></tr>';
-  container.innerHTML = `<section class="requisitions-page" aria-label="Requisitions"><section class="requisition-toolbar"><label class="field"><span class="visually-hidden">Filter requisitions by status</span><select class="field__control" data-requisition-filter><option value="all">All statuses</option>${['Pending', 'Approved', 'Ordered', 'Received', 'Rejected', 'Cancelled'].map((status) => `<option value="${status}" ${requisitionFilter === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label><button class="button" type="button" data-create-requisition>${renderIcon('plus')}Raise requisition</button></section><div class="library-table-wrap"><table class="library-table"><thead><tr><th>Request ID</th><th>Component / part</th><th>Quantity</th><th>Requested by</th><th>Project</th><th>Status</th><th>Created</th><th>Needed by</th><th>Age</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  container.innerHTML = `<section class="requisitions-page" aria-label="Requisitions"><section class="requisition-toolbar"><label class="field"><span class="visually-hidden">Filter requisitions by status</span><select class="field__control" data-requisition-filter><option value="all">All statuses</option>${['Pending', 'Approved', 'Ordered', 'Received', 'Rejected', 'Cancelled'].map((status) => `<option value="${status}" ${requisitionFilter === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>${canRaiseRequisitions() ? `<button class="button" type="button" data-create-requisition>${renderIcon('plus')}Raise requisition</button>` : ''}</section><div class="library-table-wrap"><table class="library-table"><thead><tr><th>Request ID</th><th>Component / part</th><th>Quantity</th><th>Requested by</th><th>Project</th><th>Status</th><th>Created</th><th>Needed by</th><th>Age</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
   requisitionController = new AbortController();
   container.addEventListener('click', async (event) => { if (event.target.closest('[data-create-requisition]')) await openRequisitionForm(container); }, { signal: requisitionController.signal });
   container.addEventListener('change', async (event) => { if (event.target.matches('[data-requisition-filter]')) { requisitionFilter = event.target.value; await renderRequisitionsPage(container); } }, { signal: requisitionController.signal });
@@ -109,12 +145,40 @@ export async function renderRequisitionsPage(container) {
 
 export async function renderRequisitionDetailsPage(container, requisitionId) {
   destroyRequisitionsPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading requisition…</h2></section>';
-  const requisition = await getRequisition(requisitionId);
+  renderLoadingState(container, { title: 'Loading requisition…', description: 'Preparing the request.' });
+
+  let requisition;
+  try {
+    requisition = await getRequisition(requisitionId);
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load this requisition',
+      onRetry: () => renderRequisitionDetailsPage(container, requisitionId)
+    });
+    return;
+  }
   if (!requisition) { container.innerHTML = `<section class="state-panel"><h2 class="state-panel__title">${renderIcon('alert')}Requisition not found</h2><a class="button" href="/requisitions" data-route-link>${renderIcon('back')}Back to Requisitions</a></section>`; return; }
   const history = requisition.statusHistory.slice().reverse().map((event) => `<li><strong>${escapeHtml(event.toStatus)}</strong><span>${escapeHtml(event.note || 'No note')} · ${formatDateTime(event.timestamp)}</span></li>`).join('');
-  const canUpdate = getAllowedRequisitionStatuses(requisition.status).length > 0;
-  container.innerHTML = `<section class="requisition-details-page" aria-labelledby="requisition-title"><a class="back-link" href="/requisitions" data-route-link>${renderIcon('back')}Back to Requisitions</a><header class="overview-header"><div><p class="eyebrow">${requisition.id}</p><h2 id="requisition-title">${escapeHtml(requisitionName(requisition))}</h2><p>${formatQuantity(requisition.quantity, requisition.unit?.symbol)} · ${escapeHtml(requisition.project?.name || 'No project')}</p></div><div class="requisition-detail-actions"><span class="status-badge status-badge--${statusClass(requisition.status)}">${renderStatusIcon(statusClass(requisition.status))}${requisition.status}</span>${canUpdate ? `<button class="button" type="button" data-update-requisition-status>${renderIcon('status')}Update status</button>` : ''}</div></header><div class="requisition-details-grid"><section class="detail-card"><h3>Request details</h3><dl class="detail-list"><div><dt>Requested by</dt><dd>${escapeHtml(requisition.requester?.name || '—')}</dd></div><div><dt>Created</dt><dd>${formatDateTime(requisition.createdOn)}</dd></div><div><dt>Needed by</dt><dd>${formatDate(requisition.neededBy)}</dd></div><div><dt>Note</dt><dd>${escapeHtml(requisition.note || 'No note')}</dd></div></dl></section><section class="detail-card"><h3>Status history</h3><ol class="status-history">${history}</ol></section></div></section>`;
+  const allowed = APP_CONFIG.mode === 'demo'
+    ? getAllowedRequisitionStatuses(requisition.status)
+    : getAllowedRequisitionStatuses(requisition);
+  // Receiving has its own endpoint because it puts stock into a chamber.
+  const canReceive = APP_CONFIG.mode !== 'demo' && allowed.includes('Received') && canDecideRequisitions();
+  const canUpdate = allowed.filter((status) => status !== 'Received').length > 0;
+  container.innerHTML = `<section class="requisition-details-page" aria-labelledby="requisition-title"><a class="back-link" href="/requisitions" data-route-link>${renderIcon('back')}Back to Requisitions</a><header class="overview-header"><div><p class="eyebrow">${requisition.id}</p><h2 id="requisition-title">${escapeHtml(requisitionName(requisition))}</h2><p>${formatQuantity(requisition.quantity, requisition.unit?.symbol)} · ${escapeHtml(requisition.project?.name || 'No project')}</p></div><div class="requisition-detail-actions"><span class="status-badge status-badge--${statusClass(requisition.status)}">${renderStatusIcon(statusClass(requisition.status))}${requisition.status}</span>${canUpdate ? `<button class="button" type="button" data-update-requisition-status>${renderIcon('status')}Update status</button>` : ''}
+${canReceive ? `<button class="button button--secondary" type="button" data-receive-requisition>${renderIcon('import')}Receive stock</button>` : ''}</div></header><div class="requisition-details-grid"><section class="detail-card"><h3>Request details</h3><dl class="detail-list"><div><dt>Requested by</dt><dd>${escapeHtml(requisition.requester?.name || '—')}</dd></div><div><dt>Created</dt><dd>${formatDateTime(requisition.createdOn)}</dd></div><div><dt>Needed by</dt><dd>${formatDate(requisition.neededBy)}</dd></div><div><dt>Note</dt><dd>${escapeHtml(requisition.note || 'No note')}</dd></div></dl></section><section class="detail-card"><h3>Status history</h3><ol class="status-history">${history}</ol></section></div></section>`;
   requisitionController = new AbortController();
-  container.addEventListener('click', async (event) => { if (event.target.closest('[data-update-requisition-status]')) await openStatusForm(container, requisition); }, { signal: requisitionController.signal });
+  container.addEventListener('click', async (event) => {
+    if (event.target.closest('[data-update-requisition-status]')) {
+      await openStatusForm(container, requisition);
+      return;
+    }
+    if (event.target.closest('[data-receive-requisition]')) {
+      openReceiveRequisitionModal({
+        requisition,
+        onReceived: () => renderRequisitionDetailsPage(container, requisition.id)
+      });
+    }
+  }, { signal: requisitionController.signal });
 }

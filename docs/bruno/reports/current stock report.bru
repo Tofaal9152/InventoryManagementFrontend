@@ -1,0 +1,112 @@
+meta {
+  name: current stock report
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}reports/current-stock/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+  ~category: 1
+  ~search: motor
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Every non-archived component with category, unit, total quantity, chambers
+  held, last buying price, delivery charge and estimated stock value. Admin or
+  Manager. Filters: `category`, `search` (name or part number). `summary` has
+  the component count and total estimated stock value (indicative only, not
+  an accounting figure).
+
+  Like every report (FR-9.1): a paginated JSON table with `columns` (key and header)
+  and, where it applies, a `summary`. Add `?export=xlsx` or `?export=csv` to download
+  the whole report (every page) as a file; quantities are written with their unit symbol.
+
+  ## API example response
+  {
+    "count": 8,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "component_id": 6,
+        "component": "5V Relay Module",
+        "part_number": null,
+        "category": "Miscellaneous",
+        "unit_symbol": "pcs",
+        "total_quantity": "0.000",
+        "stock_status": "OUT_OF_STOCK",
+        "chambers_held": 0,
+        "locations": [],
+        "last_buying_price": null,
+        "delivery_charge": null,
+        "estimated_stock_value": null
+      },
+      {
+        "component_id": 7,
+        "component": "AMS1117 3.3V Regulator",
+        "part_number": "AMS1117-3.3",
+        "category": "Voltage Regulators",
+        "unit_symbol": "pcs",
+        "total_quantity": "150.000",
+        "stock_status": "IN_STOCK",
+        "chambers_held": 1,
+        "locations": [
+          "C21"
+        ],
+        "last_buying_price": "6.50",
+        "delivery_charge": null,
+        "estimated_stock_value": "975.00"
+      }
+    ],
+    "columns": [
+      {
+        "key": "component",
+        "header": "Component"
+      },
+      {
+        "key": "part_number",
+        "header": "Part number"
+      }
+    ],
+    "summary": {
+      "components": 8,
+      "total_estimated_stock_value": "22048.00"
+    }
+  }
+
+  With ?export=csv (200):
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="current-stock.csv"
+
+  Component,Part number,Category,Unit,Total quantity,Chambers held,Locations,Last buying price (BDT),Delivery charge (BDT),Estimated stock value (BDT)
+  5V Relay Module,,Miscellaneous,pcs,0 pcs,0,,,,
+  AMS1117 3.3V Regulator,AMS1117-3.3,Voltage Regulators,pcs,150 pcs,1,C21,6.50,,975.00
+  DC Gear Motor 12V,JGB37-520,Motors,pcs,36 pcs,2,"A11, B22",450.00,150.00,16200.00
+  ESP32-DevKitC V4,ESP32-DEVKITC-V4,Microcontrollers,pcs,5 pcs,1,D11,650.00,100.00,3250.00
+  Heat Shrink Tube 3mm,,Wire & Cable,m,2.5 m,1,C31,12.00,,30.00
+  Hookup Wire 22AWG Red,UL1007-22-RED,Wire & Cable,m,18 m,1,B21,8.50,,153.00
+  LM7805 Voltage Regulator,LM7805,Voltage Regulators,pcs,60 pcs,1,A21,24.00,,1440.00
+  NEMA17 Stepper Motor,17HS4401,Motors,pcs,0 pcs,0,,1350.00,,0.00
+
+  As Staff (403):
+  {
+    "success": false,
+    "message": "Only Admins and Managers can perform this action."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

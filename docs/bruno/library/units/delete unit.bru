@@ -1,0 +1,33 @@
+meta {
+  name: delete unit
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}library/units/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 8
+}
+
+docs {
+  ## API explanation
+  Deletes a unit. Admin or Manager. Blocked while components or requisitions use it (FR-3.3). Audited.
+
+  ## API example response
+  204 No Content (empty body)
+
+  Unit still in use (400):
+  {
+    "success": false,
+    "message": "This record cannot be deleted because it is still referenced by: 3 components."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

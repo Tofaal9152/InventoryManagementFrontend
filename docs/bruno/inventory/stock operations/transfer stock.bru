@@ -1,0 +1,115 @@
+meta {
+  name: transfer stock
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}inventory/stock/transfer/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Chamber codes; must differ. Required.
+    "source_location": "A11",
+    "destination_location": "B22",
+
+    // Quantity to move, > 0. Required.
+    "quantity": "10",
+
+    // Optional.
+    "note": "Split across drawers"
+  }
+}
+
+docs {
+  ## API explanation
+  Moves stock between chambers (FR-6.4). Admin or Manager. Can't move more than
+  the source holds (FR-6.6). The destination must be empty or hold the same
+  component (FR-6.7).
+
+  Rules shared by every stock operation (FR-6):
+  - Locations are chamber codes such as `A11` (case-insensitive).
+  - A chamber holds one component type (FR-6.2).
+  - Quantities must be greater than zero and whole numbers for units that don't allow fractions.
+  - Each operation writes an immutable movement (FR-6.5) and runs with row locks, so concurrent operations can't drive a chamber below zero (FR-6.11).
+  - The response has the `movement` and the resulting `stock_entries`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Stock transferred.",
+    "movement": {
+      "id": 9,
+      "movement_type": "TRANSFER",
+      "movement_type_display": "Transfer",
+      "component": {
+        "id": 1,
+        "name": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "unit_symbol": "pcs"
+      },
+      "source_location": "A11",
+      "destination_location": "B22",
+      "quantity": "10.000",
+      "quantity_before": null,
+      "quantity_after": null,
+      "unit_price": null,
+      "delivery_charge": null,
+      "performed_by": {
+        "id": 2,
+        "username": "karim.hossain",
+        "email": "karim.hossain@example.com",
+        "role": "MANAGER"
+      },
+      "project": null,
+      "related_movement": null,
+      "note": "Split across drawers",
+      "created_at": "2026-09-14T22:17:36.687281+06:00"
+    },
+    "stock_entries": [
+      {
+        "id": 1,
+        "location": "A11",
+        "chamber": 1,
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "26.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.591057+06:00",
+        "updated_at": "2026-09-14T22:17:36.686376+06:00"
+      },
+      {
+        "id": 5,
+        "location": "B22",
+        "chamber": 13,
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "10.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.686773+06:00",
+        "updated_at": "2026-09-14T22:17:36.686777+06:00"
+      }
+    ]
+  }
+
+  Destination holds another component (400):
+  {
+    "success": false,
+    "message": "Location A21 holds LM7805 Voltage Regulator. Stock can only be transferred into an empty chamber or one holding the same component."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

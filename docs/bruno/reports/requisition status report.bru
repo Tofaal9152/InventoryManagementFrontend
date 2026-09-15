@@ -1,0 +1,155 @@
+meta {
+  name: requisition status report
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}reports/requisition-status/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+  ~status: ORDERED
+  ~project: 1
+  ~date_from: 2026-09-01
+  ~date_to: 2026-09-30
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Requisitions grouped by status with ageing (FR-9.2): each row has
+  `days_in_current_status` and `age_days` (since created). `summary` gives the
+  count and average days in status for every status. Admin or Manager.
+  Filters: `status`, `project`, `date_from` / `date_to` (created date).
+
+  Like every report (FR-9.1): a paginated JSON table with `columns` (key and header)
+  and, where it applies, a `summary`. Add `?export=xlsx` or `?export=csv` to download
+  the whole report (every page) as a file; quantities are written with their unit symbol.
+
+  ## API example response
+  {
+    "count": 3,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 3,
+        "reference": "REQ-000003",
+        "part_name": "5A glass fuses",
+        "unit_symbol": "pcs",
+        "quantity": "20.000",
+        "requested_by": "nadia.islam",
+        "project": null,
+        "status": "CANCELLED",
+        "created_at": "2026-09-14T22:17:36.916819+06:00",
+        "needed_by": null,
+        "days_in_current_status": 0,
+        "age_days": 0
+      },
+      {
+        "id": 2,
+        "reference": "REQ-000002",
+        "part_name": "ESP32-DevKitC V4",
+        "unit_symbol": "pcs",
+        "quantity": "5.000",
+        "requested_by": "nadia.islam",
+        "project": "Line Follower Robot",
+        "status": "RECEIVED",
+        "created_at": "2026-09-14T22:17:36.906024+06:00",
+        "needed_by": "2026-10-01",
+        "days_in_current_status": 0,
+        "age_days": 0
+      },
+      {
+        "id": 1,
+        "reference": "REQ-000001",
+        "part_name": "LM7805 Voltage Regulator",
+        "unit_symbol": "pcs",
+        "quantity": "100.000",
+        "requested_by": "nadia.islam",
+        "project": "Solar Charge Controller",
+        "status": "REJECTED",
+        "created_at": "2026-09-14T22:17:36.892899+06:00",
+        "needed_by": "2026-10-15",
+        "days_in_current_status": 0,
+        "age_days": 0
+      }
+    ],
+    "columns": [
+      {
+        "key": "reference",
+        "header": "Request ID"
+      },
+      {
+        "key": "part_name",
+        "header": "Component / part"
+      },
+      {
+        "key": "quantity",
+        "header": "Quantity"
+      },
+      {
+        "key": "requested_by",
+        "header": "Requested by"
+      },
+      {
+        "key": "project",
+        "header": "Project"
+      },
+      {
+        "key": "status",
+        "header": "Status"
+      }
+    ],
+    "summary": [
+      {
+        "status": "PENDING",
+        "label": "Pending",
+        "count": 0,
+        "average_days_in_status": null
+      },
+      {
+        "status": "APPROVED",
+        "label": "Approved",
+        "count": 0,
+        "average_days_in_status": null
+      },
+      {
+        "status": "ORDERED",
+        "label": "Ordered",
+        "count": 0,
+        "average_days_in_status": null
+      },
+      {
+        "status": "RECEIVED",
+        "label": "Received",
+        "count": 1,
+        "average_days_in_status": 0.0
+      },
+      {
+        "status": "REJECTED",
+        "label": "Rejected",
+        "count": 1,
+        "average_days_in_status": 0.0
+      },
+      {
+        "status": "CANCELLED",
+        "label": "Cancelled",
+        "count": 1,
+        "average_days_in_status": 0.0
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

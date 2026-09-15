@@ -1,4 +1,7 @@
 import { APP_CONFIG } from '../config.js';
+import { apiList, apiRequest } from '../api/client.js';
+import { mapMovement } from '../api/mappers/library.js';
+import { mapProject, mapProjectDetails, mapProjectSummary } from '../api/mappers/projects.js';
 import { getDemoState, updateDemoState } from '../data/demo-store.js';
 
 export class ProjectValidationError extends Error {
@@ -30,12 +33,32 @@ export async function listProjects({ activeOnly = false } = {}) {
     return activeOnly ? projects.filter((project) => project.status === 'Active') : projects;
   }
 
-  throw new Error('Project API integration is not configured yet.');
+  const { items } = await apiList('projects/', {
+    params: { status: activeOnly ? 'ACTIVE' : '', ordering: 'name', page_size: 100 }
+  });
+  return items.map(mapProject);
 }
 
 export async function createProject({ name, description = '', status = 'Active' }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Project API integration is not configured yet.');
+    const trimmed = String(name || '').trim();
+    if (!trimmed) throw new ProjectValidationError({ name: 'Project name is required.' });
+
+    try {
+      const dto = await apiRequest('projects/', {
+        method: 'POST',
+        body: { name: trimmed, description: String(description || '').trim() }
+      });
+      return mapProject(dto);
+    } catch (error) {
+      if (error?.name === 'ApiRequestError' && error.isValidationError) {
+        throw new ProjectValidationError({
+          name: error.fields.name || error.message,
+          description: error.fields.description || ''
+        });
+      }
+      throw error;
+    }
   }
 
   const state = getDemoState();
@@ -84,7 +107,17 @@ export async function createProject({ name, description = '', status = 'Active' 
 }
 
 export async function listProjectSummaries() {
-  if (APP_CONFIG.mode !== 'demo') throw new Error('Project API integration is not configured yet.');
+  if (APP_CONFIG.mode !== 'demo') {
+    // The list rows carry no consumption, so each card's spend comes from its detail.
+    const { items } = await apiList('projects/', { params: { ordering: 'name', page_size: 100 } });
+    return Promise.all(items.map(async (item) => {
+      try {
+        return mapProjectSummary(await apiRequest(`projects/${encodeURIComponent(item.id)}/`));
+      } catch {
+        return { ...mapProject(item), takeCount: 0, estimatedValue: 0 };
+      }
+    }));
+  }
 
   const state = getDemoState();
   const componentsById = new Map(state.components.map((component) => [component.id, component]));
@@ -96,7 +129,26 @@ export async function listProjectSummaries() {
 }
 
 export async function getProjectDetails(projectId) {
-  if (APP_CONFIG.mode !== 'demo') throw new Error('Project API integration is not configured yet.');
+  if (APP_CONFIG.mode !== 'demo') {
+    let dto;
+    try {
+      dto = await apiRequest(`projects/${encodeURIComponent(projectId)}/`);
+    } catch (error) {
+      if (error?.status === 404) return null;
+      throw error;
+    }
+
+    // Project activity is the movements taken against it.
+    let movements = [];
+    try {
+      const page = await apiList('inventory/movements/', { params: { project: projectId, page_size: 25 } });
+      movements = page.items.map(mapMovement);
+    } catch {
+      movements = [];
+    }
+
+    return { ...mapProjectDetails(dto), movements };
+  }
 
   const state = getDemoState();
   const project = state.projects.find((item) => item.id === projectId);
@@ -117,4 +169,15 @@ export async function getProjectDetails(projectId) {
     consumption: [...consumption.values()],
     movements: takes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
   };
+}
+
+/** Closing a project keeps its history but stops new Takes against it. */
+export async function setProjectClosed(projectId, closed) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Closing demo projects is not supported.');
+  }
+
+  const action = closed ? 'close' : 'reopen';
+  const dto = await apiRequest(`projects/${encodeURIComponent(projectId)}/${action}/`, { method: 'POST' });
+  return mapProject(dto?.data || dto);
 }

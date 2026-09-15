@@ -1,0 +1,55 @@
+meta {
+  name: commit inventory import
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}inventory/import/commit/
+  body: multipart-form
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file()
+}
+
+docs {
+  ## API explanation
+  Import is two steps (FR-1.8): **preview** validates the file and shows what would be
+  created, updated and rejected (nothing is saved); **commit** re-validates the same
+  file and applies every valid row in one transaction. Rejected rows are skipped and
+  listed with the reason. For a downloadable error report, call preview with
+  `?export=xlsx` or `?export=csv`.
+
+  Send `multipart/form-data` with `file` (.xlsx or .csv, max 10 MB, header row
+  first). If the file's headers differ from the template, add a `column_mapping`
+  form field with a JSON object of template field to header, e.g.
+  `{"name": "Component Name", "unit": "UOM"}`.
+
+  Commit applies the inventory import under row locks. Admin or Manager. Every change
+  goes through the ledger: a new entry records an `ADD` movement, a changed quantity
+  an `ADJUST` (note "Inventory import").
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Inventory import committed: 2 created, 1 updated, 0 unchanged, 1 rejected.",
+    "summary": {
+      "created": 2,
+      "updated": 1,
+      "unchanged": 0,
+      "rejected": 1
+    },
+    "rejected": [
+      {
+        "row": 5,
+        "reason": "Location B21 already holds a different component (Hookup Wire 22AWG Red)."
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

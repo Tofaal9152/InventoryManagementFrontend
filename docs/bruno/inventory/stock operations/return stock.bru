@@ -1,0 +1,110 @@
+meta {
+  name: return stock
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}inventory/stock/return/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Chamber location code. Required.
+    "location": "A11",
+
+    // Quantity to return, > 0. Required.
+    "quantity": "2",
+
+    // Why it's coming back. Required.
+    "note": "Two spares not needed",
+
+    // Id of the TAKE movement being returned. Optional but recommended.
+    "related_movement": 5
+  }
+}
+
+docs {
+  ## API explanation
+  Returns stock into a chamber (FR-6.4). Any role. `note` is required.
+
+  Link the original take with `related_movement` so the return counts
+  against the same project, and so you can't return more than was taken
+  (minus earlier returns). With a linked take the chamber can be empty (for
+  example after the entry was deleted); without one, the chamber must already
+  hold the component.
+
+  Rules shared by every stock operation (FR-6):
+  - Locations are chamber codes such as `A11` (case-insensitive).
+  - A chamber holds one component type (FR-6.2).
+  - Quantities must be greater than zero and whole numbers for units that don't allow fractions.
+  - Each operation writes an immutable movement (FR-6.5) and runs with row locks, so concurrent operations can't drive a chamber below zero (FR-6.11).
+  - The response has the `movement` and the resulting `stock_entries`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Stock returned.",
+    "movement": {
+      "id": 6,
+      "movement_type": "RETURN",
+      "movement_type_display": "Return",
+      "component": {
+        "id": 1,
+        "name": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "unit_symbol": "pcs"
+      },
+      "source_location": null,
+      "destination_location": "A11",
+      "quantity": "2.000",
+      "quantity_before": null,
+      "quantity_after": null,
+      "unit_price": null,
+      "delivery_charge": null,
+      "performed_by": {
+        "id": 3,
+        "username": "nadia.islam",
+        "email": "nadia.islam@example.com",
+        "role": "STAFF"
+      },
+      "project": {
+        "id": 1,
+        "name": "Line Follower Robot",
+        "status": "ACTIVE"
+      },
+      "related_movement": 5,
+      "note": "Two spares not needed",
+      "created_at": "2026-09-14T22:17:36.655904+06:00"
+    },
+    "stock_entries": [
+      {
+        "id": 1,
+        "location": "A11",
+        "chamber": 1,
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "36.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.591057+06:00",
+        "updated_at": "2026-09-14T22:17:36.655244+06:00"
+      }
+    ]
+  }
+
+  More than is left on the linked take (400):
+  {
+    "success": false,
+    "message": "Only 4 pcs of that take can still be returned."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

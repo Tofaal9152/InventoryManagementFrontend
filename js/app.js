@@ -1,9 +1,10 @@
 import { APP_CONFIG, DEFAULT_ROUTE, NAVIGATION } from './config.js';
-import { initializeRouter } from './router.js';
+import { initializeRouter, navigateTo } from './router.js';
 import { initialiseDemoSession, resetDemoSession } from './services/demo-session-service.js';
 import { confirmAction } from './ui/confirm-dialog.js';
 import { showToast } from './ui/toast.js';
 import { renderIcon } from './ui/icons.js';
+import { escapeHtml } from './utils/dom.js';
 import { destroyInventoryPage, renderInventoryPage } from './pages/inventory-page.js';
 import { destroyLibraryPage, renderComponentDetailsPage, renderLibraryPage } from './pages/library-page.js';
 import { destroyDashboardPage, renderDashboardPage } from './pages/dashboard-page.js';
@@ -11,11 +12,21 @@ import { destroyProjectsPage, renderProjectDetailsPage, renderProjectsPage } fro
 import { renderReportsPage } from './pages/reports-page.js';
 import { destroyRequisitionsPage, renderRequisitionDetailsPage, renderRequisitionsPage } from './pages/requisitions-page.js';
 import { destroyAdministrationPage, renderAdministrationPage, renderAuditLogPage } from './pages/administration-page.js';
+import { destroyLoginPage, renderLoginPage } from './pages/login-page.js';
+import { canAdministerUsers, getEffectiveRole } from './services/permission-service.js';
+import {
+  getSignedInRoleLabel,
+  getSignedInUser,
+  isSignedIn,
+  signOut,
+  subscribeToSession
+} from './services/auth-service.js';
 
 const routeView = document.querySelector('#route-view');
 const navigationRoot = document.querySelector('#primary-nav');
 const appSidebar = document.querySelector('.app-sidebar');
 const menuToggle = document.querySelector('#menu-toggle');
+const sidebarAccount = document.querySelector('#sidebar-account');
 
 const pageCopy = {
   '/dashboard': {
@@ -40,8 +51,22 @@ const pageCopy = {
   }
 };
 
+function visibleNavigation() {
+  return NAVIGATION.filter(({ adminOnly }) => !adminOnly || canAdministerUsers());
+}
+
+function renderNotPermittedPage(label) {
+  return `
+    <section class="state-panel" aria-labelledby="not-permitted-title">
+      <h2 class="state-panel__title" id="not-permitted-title">${renderIcon('alert')}${escapeHtml(label)} is not available for your role</h2>
+      <p class="state-panel__description">This area is limited to Admins. Ask an Admin if you need access.</p>
+      <a class="button" href="${DEFAULT_ROUTE}" data-route-link>${renderIcon('dashboard')}Go to dashboard</a>
+    </section>
+  `;
+}
+
 function renderNavigation(activePath) {
-  navigationRoot.innerHTML = NAVIGATION.map(({ path, label, icon }) => `
+  navigationRoot.innerHTML = visibleNavigation().map(({ path, label, icon }) => `
     <a class="nav-link" href="${path}" data-route-link ${path === activePath ? 'aria-current="page"' : ''}>
       ${renderIcon(icon, { className: 'nav-link__icon' })}
       <span class="nav-link__label">${label}</span>
@@ -103,6 +128,62 @@ function renderFoundationPage(page) {
   `;
 }
 
+function renderAccountFooter() {
+  const dataLabel = APP_CONFIG.mode === 'demo' ? 'Demo data' : 'Live data';
+
+  if (!isSignedIn()) {
+    sidebarAccount.innerHTML = `
+      <div class="sidebar-account">
+        <div class="sidebar-account__identity">
+          <span class="sidebar-account__name">Not signed in</span>
+          <span class="sidebar-account__role">${dataLabel}</span>
+        </div>
+        <a class="sidebar-account__action" href="/login" data-route-link>
+          ${renderIcon('view')}<span>Sign in</span>
+        </a>
+      </div>
+    `;
+    return;
+  }
+
+  const user = getSignedInUser();
+  sidebarAccount.innerHTML = `
+    <div class="sidebar-account">
+      <div class="sidebar-account__identity">
+        <span class="sidebar-account__name">${escapeHtml(user?.fullName || user?.email || 'Signed in')}</span>
+        <span class="sidebar-account__role">${getSignedInRoleLabel()} · ${dataLabel}</span>
+      </div>
+      <button class="sidebar-account__action" type="button" data-sign-out>
+        ${renderIcon('back')}<span data-sign-out-label>Sign out</span>
+      </button>
+    </div>
+  `;
+}
+
+/**
+ * Demo mode browses without a backend, so the guard only applies to live data.
+ * The login route itself always renders, which is how a demo session signs in.
+ */
+function requiresSignIn(route) {
+  return APP_CONFIG.mode !== 'demo' && route !== '/login' && !isSignedIn();
+}
+
+let routeBeforeSignIn = null;
+
+function renderSignIn(reason = '') {
+  document.title = `Sign in | ${APP_CONFIG.appName}`;
+  document.body.classList.add('is-signed-out');
+  renderAccountFooter();
+  renderLoginPage(routeView, {
+    reason,
+    onSignedIn: () => {
+      const target = routeBeforeSignIn && routeBeforeSignIn !== '/login' ? routeBeforeSignIn : DEFAULT_ROUTE;
+      routeBeforeSignIn = null;
+      navigateTo(target);
+    }
+  });
+}
+
 async function renderRoute(route) {
   const libraryDetailMatch = route?.match(/^\/library\/([^/]+)$/);
   const projectDetailMatch = route?.match(/^\/projects\/([^/]+)$/);
@@ -118,6 +199,35 @@ async function renderRoute(route) {
   destroyDashboardPage();
   destroyRequisitionsPage();
   destroyAdministrationPage();
+  destroyLoginPage();
+
+  if (requiresSignIn(route)) {
+    routeBeforeSignIn = route;
+    renderSignIn('Sign in to continue.');
+    return;
+  }
+
+  if (route === '/login') {
+    if (isSignedIn()) {
+      navigateTo(DEFAULT_ROUTE);
+      return;
+    }
+    renderSignIn();
+    return;
+  }
+
+  document.body.classList.remove('is-signed-out');
+  renderAccountFooter();
+
+  if ((navigationPath === '/settings/cabinets' || navigationPath === '/audit-log') && !canAdministerUsers()) {
+    const label = navigationItem?.label || 'This page';
+    document.title = `${label} | ${APP_CONFIG.appName}`;
+    renderNavigation(null);
+    closeNavigation();
+    routeView.innerHTML = renderNotPermittedPage(label);
+    return;
+  }
+
   const routeTitle = libraryDetailMatch ? 'Component details' : projectDetailMatch ? 'Project details' : requisitionDetailMatch ? 'Requisition details' : page?.title || navigationItem?.label || 'Page not found';
   document.title = `${routeTitle} | ${APP_CONFIG.appName}`;
   renderNavigation(navigationPath);
@@ -170,6 +280,53 @@ async function renderRoute(route) {
 
   routeView.innerHTML = !route ? renderNotFoundPage() : page ? renderFoundationPage(page) : renderPlannedPage(route);
 }
+
+document.addEventListener('click', async (event) => {
+  const signOutButton = event.target.closest('[data-sign-out]');
+  if (!signOutButton) return;
+
+  const confirmed = await confirmAction({
+    title: 'Sign out?',
+    description: 'You will need your email and password to sign back in.',
+    confirmLabel: 'Sign out',
+    tone: 'default'
+  });
+  if (!confirmed) return;
+
+  const label = signOutButton.querySelector('[data-sign-out-label]');
+  signOutButton.disabled = true;
+  if (label) label.textContent = 'Signing out…';
+
+  await signOut();
+  showToast('You have been signed out.');
+  navigateTo('/login');
+});
+
+// The server is the authority on permissions: a 403 that slipped past a hidden
+// control is explained once, calmly, instead of surfacing as an unhandled error.
+window.addEventListener('unhandledrejection', (event) => {
+  const error = event.reason;
+  if (error?.name !== 'ApiRequestError') return;
+  if (error.status === 403) {
+    event.preventDefault();
+    showToast(error.message || 'Your role does not allow this action.', { type: 'error' });
+    return;
+  }
+  if (error.sessionExpired) {
+    event.preventDefault();
+  }
+});
+
+// A refresh that fails clears the session from inside the API client; land on
+// the login screen instead of leaving a half-dead page behind.
+subscribeToSession((session) => {
+  if (session.access) return;
+  renderAccountFooter();
+  if (window.location.pathname !== '/login' && APP_CONFIG.mode !== 'demo') {
+    routeBeforeSignIn = window.location.pathname;
+    navigateTo('/login');
+  }
+});
 
 document.addEventListener('click', async (event) => {
   const resetButton = event.target.closest('[data-reset-demo]');

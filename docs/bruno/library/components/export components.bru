@@ -1,0 +1,54 @@
+meta {
+  name: export components
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}library/components/export/?export=csv&columns=name,part_number,category,total_quantity,locations
+  body: none
+  auth: inherit
+}
+
+params:query {
+  export: csv
+  columns: name,part_number,category,total_quantity,locations
+  ~search: motor
+  ~category: 1
+  ~unit: 1
+  ~stock_status: below_minimum
+  ~min_price: 10
+  ~max_price: 500
+  ~project: 1
+  ~archived: false
+  ~ordering: name
+}
+
+docs {
+  ## API explanation
+  Downloads the component list as Excel or CSV (FR-1.10). Admin or Manager.
+  Takes every filter, search and sort parameter from "list components".
+  Quantities are written with their unit symbol (FR-3.5).
+
+  `export`: `xlsx` (default) | `csv`.
+  `columns`: comma-separated, any of `name`, `part_number`, `category`, `unit`,
+  `total_quantity`, `minimum_quantity`, `stock_status`, `last_buying_price`,
+  `delivery_charge`, `locations`, `manufacturer`, `datasheet_url`,
+  `description`, `image_url`, `is_archived`, `updated_at`. Default: the list columns.
+
+
+  ## API example response
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="components.csv"
+
+  Name,Part number,Category,Total quantity,Locations
+  5V Relay Module,,Miscellaneous,0 pcs,
+  DC Gear Motor 12V,JGB37-520,Motors,36 pcs,"A11, B22"
+  Hookup Wire 22AWG Red,UL1007-22-RED,Wire & Cable,18 m,B21
+  LM7805 Voltage Regulator,LM7805,Voltage Regulators,58 pcs,A21
+  NEMA17 Stepper Motor,17HS4401,Motors,0 pcs,
+}
+
+settings {
+  encodeUrl: true
+}

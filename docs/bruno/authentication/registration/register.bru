@@ -1,0 +1,48 @@
+meta {
+  name: register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}rest-auth/registration/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // Login email. Required.
+    "email": "new.member@example.com",
+
+    // Password, entered twice. Required.
+    "password1": "Member-pass-123",
+    "password2": "Member-pass-123"
+
+    // "username" is optional; allauth generates one when omitted.
+  }
+}
+
+docs {
+  ## API explanation
+  Self-registration (dj-rest-auth `RegisterView`). Public. New accounts get
+  the `STAFF` role. Because `ACCOUNT_EMAIL_VERIFICATION = "mandatory"`, no
+  token is issued here: the user confirms the e-mail ("verify email") and then
+  logs in. Admins can create accounts directly with users/create user instead.
+
+
+  ## API example response
+  {
+    "detail": "Verification e-mail sent."
+  }
+
+  Email already registered (400):
+  {
+    "success": false,
+    "message": "(email) A user is already registered with this e-mail address."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

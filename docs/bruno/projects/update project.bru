@@ -1,0 +1,48 @@
+meta {
+  name: update project
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}projects/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    // Both optional on PATCH.
+    "description": "Competition line follower, v2 chassis"
+  }
+}
+
+docs {
+  ## API explanation
+  Edits a project's name or description. Admin or Manager. Use close/reopen to change status. Audited.
+
+  ## API example response
+  {
+    "id": 1,
+    "name": "Line Follower Robot",
+    "description": "Competition line follower, v2 chassis",
+    "status": "ACTIVE",
+    "status_display": "Active",
+    "created_by": {
+      "id": 2,
+      "username": "karim.hossain",
+      "email": "karim.hossain@example.com",
+      "role": "MANAGER"
+    },
+    "created_at": "2026-09-14T22:17:36.530828+06:00",
+    "updated_at": "2026-09-14T22:17:36.542562+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

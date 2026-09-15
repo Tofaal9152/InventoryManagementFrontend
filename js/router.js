@@ -1,6 +1,6 @@
 import { DEFAULT_ROUTE, NAVIGATION } from './config.js';
 
-const supportedPaths = new Set(NAVIGATION.map(({ path }) => path));
+const supportedPaths = new Set([...NAVIGATION.map(({ path }) => path), '/login']);
 
 export function getCurrentRoute() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || DEFAULT_ROUTE;

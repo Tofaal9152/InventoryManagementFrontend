@@ -1,0 +1,103 @@
+meta {
+  name: list audit logs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}administrator/audit-logs/?entity_type=REQUISITION
+  body: none
+  auth: inherit
+}
+
+params:query {
+  entity_type: REQUISITION
+  ~action: REQUISITION_STATUS_CHANGED
+  ~actor: 1
+  ~object_id: 2
+  ~date_from: 2026-09-01
+  ~date_to: 2026-09-30
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Audit trail of creates, updates and deletes on components, categories,
+  units, users, projects, the cabinet layout and stock entries, plus every
+  requisition status change (FR-10.1), newest first. `changes` holds the
+  before/after values of the fields that changed. **Admin only**.
+
+  Filters: `actor` (user id), `action` (e.g. `RECORD_UPDATED`,
+  `USER_ROLE_CHANGED`, `REQUISITION_STATUS_CHANGED`), `entity_type`
+  (`COMPONENT`, `CATEGORY`, `UNIT`, `USER`, `PROJECT`, `CABINET`, `DRAWER`,
+  `STOCK_ENTRY`, `REQUISITION`), `object_id`, `date_from` / `date_to`
+  (YYYY-MM-DD, inclusive, Asia/Dhaka days).
+
+
+  ## API example response
+  {
+    "count": 5,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 52,
+        "actor": {
+          "id": 1,
+          "username": "admin",
+          "email": "admin@example.com",
+          "role": "ADMIN"
+        },
+        "action": "REQUISITION_STATUS_CHANGED",
+        "action_display": "Requisition status changed",
+        "entity_type": "REQUISITION",
+        "entity_type_display": "Requisition",
+        "object_id": "2",
+        "object_repr": "REQ-000002: ESP32-DevKitC V4",
+        "changes": {
+          "after": {
+            "note": "Invoice TS-10492",
+            "status": "RECEIVED"
+          },
+          "before": {
+            "status": "ORDERED"
+          }
+        },
+        "created_at": "2026-09-14T22:17:36.994679+06:00"
+      },
+      {
+        "id": 48,
+        "actor": {
+          "id": 1,
+          "username": "admin",
+          "email": "admin@example.com",
+          "role": "ADMIN"
+        },
+        "action": "REQUISITION_STATUS_CHANGED",
+        "action_display": "Requisition status changed",
+        "entity_type": "REQUISITION",
+        "entity_type_display": "Requisition",
+        "object_id": "1",
+        "object_repr": "REQ-000001: LM7805 Voltage Regulator",
+        "changes": {
+          "after": {
+            "note": "Enough stock after the recount",
+            "status": "REJECTED"
+          },
+          "before": {
+            "status": "PENDING"
+          }
+        },
+        "created_at": "2026-09-14T22:17:36.962186+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

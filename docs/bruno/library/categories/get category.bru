@@ -1,0 +1,35 @@
+meta {
+  name: get category
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}library/categories/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  ## API explanation
+  One category with its component count and total quantity. Any role.
+
+  ## API example response
+  {
+    "id": 1,
+    "name": "Motors",
+    "description": "DC, servo and stepper motors",
+    "component_count": 2,
+    "total_quantity": "36.000",
+    "created_at": "2026-09-14T22:17:36.308380+06:00",
+    "updated_at": "2026-09-14T22:17:36.308384+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

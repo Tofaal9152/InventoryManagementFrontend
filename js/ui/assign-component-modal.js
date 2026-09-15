@@ -57,6 +57,7 @@ export async function openAssignmentModal({ cabinet, drawer }) {
       await assignComponentToDrawer({
         cabinetId: cabinet.id,
         drawerId: drawer.id,
+        locationCode: drawer.locationCode || '',
         componentId: getFieldValue(form, 'componentId'),
         quantity: getFieldValue(form, 'quantity'),
         note: getFieldValue(form, 'note')

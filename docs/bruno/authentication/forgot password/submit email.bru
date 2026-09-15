@@ -1,0 +1,42 @@
+meta {
+  name: submit email
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}rest-auth/password/reset/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // Email address to send the reset link to. Required.
+    "email": "karim.hossain@example.com"
+  }
+}
+
+docs {
+  ## API explanation
+  Sends a password reset e-mail (dj-rest-auth `PasswordResetView`). Public.
+  Always returns 200 with the same message, whether or not the email is
+  registered, so the endpoint can't be used to discover accounts.
+
+  The e-mail links to `{FRONTEND_URL}/auth/password/reset/confirm/<uid>/<token>`
+  (rewritten by `all_auth_extended.AccountAdapter`). The frontend reads
+  `uid` and `token` from that URL and posts them to "reset password".
+
+
+  ## API example response
+  {
+    "detail": "Password reset e-mail has been sent."
+  }
+
+  ## Changelog
+  - 2026-09-14: Fixed the example request body to use the field name the view actually reads (`email`), replacing the stale `email_reg` key.
+}
+
+settings {
+  encodeUrl: true
+}

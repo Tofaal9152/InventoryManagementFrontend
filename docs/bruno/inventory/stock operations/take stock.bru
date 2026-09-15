@@ -1,0 +1,113 @@
+meta {
+  name: take stock
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}inventory/stock/take/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Chamber location code. Required.
+    "location": "A11",
+
+    // Quantity to take, > 0. Required.
+    "quantity": "6",
+
+    // Project id to consume against. Optional; must be ACTIVE.
+    "project": 1,
+
+    // Optional.
+    "note": "Drive motors for chassis v2"
+  }
+}
+
+docs {
+  ## API explanation
+  Takes stock out of a chamber (FR-6.4). Any role. Can't take more than the
+  chamber holds (FR-6.6). The optional `project` tag (FR-6.9) must be an
+  active project. When the chamber reaches zero, the stock entry stays with
+  quantity 0 until someone deletes it.
+
+  Rules shared by every stock operation (FR-6):
+  - Locations are chamber codes such as `A11` (case-insensitive).
+  - A chamber holds one component type (FR-6.2).
+  - Quantities must be greater than zero and whole numbers for units that don't allow fractions.
+  - Each operation writes an immutable movement (FR-6.5) and runs with row locks, so concurrent operations can't drive a chamber below zero (FR-6.11).
+  - The response has the `movement` and the resulting `stock_entries`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Stock taken.",
+    "movement": {
+      "id": 5,
+      "movement_type": "TAKE",
+      "movement_type_display": "Take",
+      "component": {
+        "id": 1,
+        "name": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "unit_symbol": "pcs"
+      },
+      "source_location": "A11",
+      "destination_location": null,
+      "quantity": "6.000",
+      "quantity_before": null,
+      "quantity_after": null,
+      "unit_price": null,
+      "delivery_charge": null,
+      "performed_by": {
+        "id": 3,
+        "username": "nadia.islam",
+        "email": "nadia.islam@example.com",
+        "role": "STAFF"
+      },
+      "project": {
+        "id": 1,
+        "name": "Line Follower Robot",
+        "status": "ACTIVE"
+      },
+      "related_movement": null,
+      "note": "Drive motors for chassis v2",
+      "created_at": "2026-09-14T22:17:36.636966+06:00"
+    },
+    "stock_entries": [
+      {
+        "id": 1,
+        "location": "A11",
+        "chamber": 1,
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "34.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.591057+06:00",
+        "updated_at": "2026-09-14T22:17:36.636285+06:00"
+      }
+    ]
+  }
+
+  More than the chamber holds (400):
+  {
+    "success": false,
+    "message": "Only 3 pcs available at C11."
+  }
+
+  Fraction of a whole-number unit (400):
+  {
+    "success": false,
+    "message": "Pieces (pcs) does not allow fractional quantities."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

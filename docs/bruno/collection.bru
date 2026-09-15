@@ -1,0 +1,39 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  # Components Inventory API
+
+  Backend for the Components Inventory Management System (see `docs/` in the repo).
+
+  ## Getting started
+  1. Select the **local** environment (`base_url` = `http://localhost:8000/`).
+  2. Run **authentication/login**. Its script saves `accessToken` / `refreshToken`.
+  3. Every other request inherits this collection's Bearer auth (`{{accessToken}}`).
+     Log in as a different user to switch roles.
+  4. A fresh database has no cabinet: run **inventory/cabinet/configure cabinet** (Admin) first.
+
+  ## Roles (FR-5.2)
+  | Capability | Admin | Manager | Staff |
+  |---|---|---|---|
+  | Users, audit log, cabinet layout, adjust stock, requisition status and receipt | Yes | No | No |
+  | Categories, units, components, projects (write), import/export, add and transfer stock, delete empty stock entries | Yes | Yes | No |
+  | Take and return stock, raise requisitions, read library, projects and the drawer map | Yes | Yes | Yes |
+  | Reports | Yes | Yes | Only movement history, user activity and the dashboard, scoped to their own activity |
+
+  Requesters can also cancel their own requisition while it's pending.
+
+  ## Conventions
+  - **Lists** are paginated: `?p=<page>&page_size=<n>` (default 25, max 500), returning `count`, `page_size`, `next`, `previous`, `num_pages`, `current_page`, `results`.
+  - **Errors**: `{"success": false, "message": "..."}`. Field errors are prefixed with the field, e.g. `(part_number) ...`; several are separated by newlines. 400 = validation or business rule, 401 = not logged in, 403 = role not allowed, 404 = not found.
+  - **Actions** (stock operations, archive, close, transitions...) return `{"success": true, "message": "...", ...data}`.
+  - **Numbers**: quantities are strings with 3 decimals (`"12.000"`), money strings with 2 decimals in BDT (`"450.00"`).
+  - **Dates**: stored in UTC and returned in Asia/Dhaka (`+06:00`). `date_from` / `date_to` filters take `YYYY-MM-DD` and are inclusive.
+  - **Sorting**: `?ordering=<field>` or `-<field>`.
+  - **Exports**: `?export=xlsx` or `?export=csv` (not `?format=`, which DRF reserves).
+}

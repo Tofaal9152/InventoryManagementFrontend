@@ -1,0 +1,50 @@
+meta {
+  name: update stock entry note
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}inventory/stock-entries/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    // Free text. Required.
+    "note": "Top shelf, left side"
+  }
+}
+
+docs {
+  ## API explanation
+  Edits a stock entry's `note`. Admin or Manager. Quantities can't be edited
+  here: they only change through stock operations. Audited.
+
+
+  ## API example response
+  {
+    "id": 1,
+    "location": "A11",
+    "chamber": 1,
+    "component": {
+      "id": 1,
+      "name": "DC Gear Motor 12V",
+      "part_number": "JGB37-520",
+      "unit_symbol": "pcs"
+    },
+    "quantity": "26.000",
+    "note": "Top shelf, left side",
+    "created_at": "2026-09-14T22:17:36.591057+06:00",
+    "updated_at": "2026-09-14T22:17:36.712577+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

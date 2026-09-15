@@ -1,0 +1,36 @@
+meta {
+  name: delete category
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}library/categories/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 6
+}
+
+docs {
+  ## API explanation
+  Deletes an empty category. Admin or Manager. Blocked while any component
+  (archived ones included) belongs to it (FR-2.2); use "reassign category"
+  first. Audited.
+
+
+  ## API example response
+  204 No Content (empty body)
+
+  Category still has components (400):
+  {
+    "success": false,
+    "message": "This category still has 1 component(s). Reassign them to another category first (POST library/categories/<id>/reassign/)."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

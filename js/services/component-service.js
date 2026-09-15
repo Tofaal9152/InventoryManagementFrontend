@@ -1,4 +1,15 @@
 import { APP_CONFIG } from '../config.js';
+import { apiList, apiRequest } from '../api/client.js';
+import { uploadFile } from './file-service.js';
+import {
+  mapComponent,
+  mapComponentFieldErrors,
+  mapComponentProjects,
+  mapMovement,
+  mapCategory,
+  mapUnit,
+  toComponentPayload
+} from '../api/mappers/library.js';
 import { getDemoState, updateDemoState } from '../data/demo-store.js';
 import { hasValidationErrors, validateComponent } from '../utils/validation.js';
 
@@ -73,21 +84,81 @@ function filterComponents(components, filters) {
   });
 }
 
+const STOCK_STATUS_PARAM = Object.freeze({
+  stocked: 'in_stock',
+  low: 'below_minimum',
+  out: 'out_of_stock'
+});
+
+const MAX_PAGES = 20;
+const PAGE_SIZE = 100;
+
+/**
+ * The library table paginates in the browser, so a live read collects every
+ * matching page first. Capped so a runaway dataset cannot spin forever.
+ */
+async function listAllComponents(params) {
+  const collected = [];
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const { items, next } = await apiList('library/components/', {
+      params: { ...params, p: page, page_size: PAGE_SIZE }
+    });
+    collected.push(...items);
+    if (!next || !items.length) break;
+  }
+  return collected;
+}
+
 export async function listComponents(filters = {}) {
   if (APP_CONFIG.mode === 'demo') {
     return filterComponents(createDemoComponents(), filters)
       .sort((first, second) => first.name.localeCompare(second.name));
   }
 
-  throw new Error('Component API integration is not configured yet.');
+  const dtos = await listAllComponents({
+    ordering: 'name',
+    search: String(filters.query || '').trim(),
+    category: filters.categoryId || '',
+    unit: filters.unitId || '',
+    stock_status: STOCK_STATUS_PARAM[filters.stockStatus] || ''
+  });
+  return dtos.map(mapComponent);
 }
 
 export async function getComponent(componentId) {
+  if (APP_CONFIG.mode !== 'demo') {
+    const dto = await apiRequest(`library/components/${encodeURIComponent(componentId)}/`);
+    return mapComponent(dto);
+  }
+
   const components = await listComponents();
   return components.find((component) => component.id === componentId) || null;
 }
 
 export async function getComponentDetails(componentId) {
+  if (APP_CONFIG.mode !== 'demo') {
+    let dto;
+    try {
+      dto = await apiRequest(`library/components/${encodeURIComponent(componentId)}/`);
+    } catch (error) {
+      if (error?.status === 404) return null;
+      throw error;
+    }
+
+    // Movements live on the inventory side; a failure there must not hide the component.
+    let movements = [];
+    try {
+      const page = await apiList('inventory/movements/', {
+        params: { component: componentId, page_size: 10 }
+      });
+      movements = page.items.map(mapMovement);
+    } catch {
+      movements = [];
+    }
+
+    return { ...mapComponent(dto), projects: mapComponentProjects(dto), movements };
+  }
+
   const component = await getComponent(componentId);
   if (!component) {
     return null;
@@ -117,7 +188,15 @@ export async function getComponentReferenceData() {
     return { categories: state.categories, units: state.units };
   }
 
-  throw new Error('Component API integration is not configured yet.');
+  const [categories, units] = await Promise.all([
+    apiList('library/categories/', { params: { page_size: PAGE_SIZE } }),
+    apiList('library/units/', { params: { page_size: PAGE_SIZE } })
+  ]);
+
+  return {
+    categories: categories.items.map(mapCategory),
+    units: units.items.map(mapUnit)
+  };
 }
 
 function makeComponentId() {
@@ -137,9 +216,81 @@ function normaliseImage(image) {
   };
 }
 
+async function saveComponentLive(input) {
+  const references = await getComponentReferenceData();
+  const candidate = {
+    ...input,
+    name: String(input.name || '').trim(),
+    partNumber: String(input.partNumber || '').trim(),
+    description: String(input.description || '').trim(),
+    manufacturer: String(input.manufacturer || '').trim(),
+    datasheetUrl: String(input.datasheetUrl || '').trim(),
+    lastBuyingPrice: Number(input.lastBuyingPrice || 0),
+    deliveryCharge: Number(input.deliveryCharge || 0),
+    minimumQuantity: Number(input.minimumQuantity || 0)
+  };
+
+  // A datasheet file replaces the typed URL, so the typed one is not validated.
+  if (input.datasheetFile) candidate.datasheetUrl = '';
+
+  // Client-side checks stay for instant feedback; uniqueness is the server's call.
+  const errors = validateComponent(candidate, { ...references, existingComponents: [] });
+  if (hasValidationErrors(errors)) throw new ComponentValidationError(errors);
+
+  const payload = toComponentPayload(candidate);
+
+  // The datasheet can be a link the user typed or a file they picked. A file is
+  // uploaded to the storage proxy first, and only its URL is stored.
+  if (input.datasheetFile) {
+    try {
+      payload.datasheet_url = await uploadFile(input.datasheetFile);
+    } catch (error) {
+      throw new ComponentValidationError({ datasheetFile: error?.message || 'The datasheet could not be uploaded.' });
+    }
+  }
+
+  // A freshly picked file goes to the storage proxy first; the component stores its URL.
+  if (input.imageFile) {
+    try {
+      payload.image_url = await uploadFile(input.imageFile);
+    } catch (error) {
+      throw new ComponentValidationError({ imageFile: error?.message || 'The image could not be uploaded.' });
+    }
+  } else if (input.image === null) {
+    payload.image_url = '';
+  } else if (input.image?.url) {
+    payload.image_url = input.image.url;
+  }
+
+  try {
+    const dto = input.id
+      ? await apiRequest(`library/components/${encodeURIComponent(input.id)}/`, { method: 'PATCH', body: payload })
+      : await apiRequest('library/components/', { method: 'POST', body: payload });
+    return mapComponent(dto);
+  } catch (error) {
+    if (error?.name === 'ApiRequestError' && error.isValidationError) {
+      throw new ComponentValidationError(
+        mapComponentFieldErrors(error.fields, error.message, { usedDatasheetFile: Boolean(input.datasheetFile) })
+      );
+    }
+    throw error;
+  }
+}
+
+/** Archive hides a component from the catalog; restore brings it back. FR-1.2. */
+export async function setComponentArchived(componentId, archived) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Archiving demo components is not supported.');
+  }
+
+  const action = archived ? 'archive' : 'restore';
+  const dto = await apiRequest(`library/components/${encodeURIComponent(componentId)}/${action}/`, { method: 'POST' });
+  return mapComponent(dto?.data || dto);
+}
+
 export async function saveComponent(input) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Component API integration is not configured yet.');
+    return saveComponentLive(input);
   }
 
   const state = getDemoState();

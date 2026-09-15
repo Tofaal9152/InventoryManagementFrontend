@@ -1,0 +1,100 @@
+meta {
+  name: adjust stock
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}inventory/stock/adjust/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Chamber location code. The chamber must already hold a component. Required.
+    "location": "A21",
+
+    // The counted quantity, >= 0, and different from the current quantity. Required.
+    "new_quantity": "58",
+
+    // Why the count changed. Required.
+    "reason": "Physical count found 2 missing"
+  }
+}
+
+docs {
+  ## API explanation
+  Corrects a chamber's quantity after a physical count (FR-6.4). **Admin only**.
+  `reason` is required. The movement records `quantity_before` /
+  `quantity_after` and the difference: going down it has a
+  `source_location`, going up a `destination_location`.
+
+  Rules shared by every stock operation (FR-6):
+  - Locations are chamber codes such as `A11` (case-insensitive).
+  - A chamber holds one component type (FR-6.2).
+  - Quantities must be greater than zero and whole numbers for units that don't allow fractions.
+  - Each operation writes an immutable movement (FR-6.5) and runs with row locks, so concurrent operations can't drive a chamber below zero (FR-6.11).
+  - The response has the `movement` and the resulting `stock_entries`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Stock adjusted.",
+    "movement": {
+      "id": 10,
+      "movement_type": "ADJUST",
+      "movement_type_display": "Adjust",
+      "component": {
+        "id": 2,
+        "name": "LM7805 Voltage Regulator",
+        "part_number": "LM7805",
+        "unit_symbol": "pcs"
+      },
+      "source_location": "A21",
+      "destination_location": null,
+      "quantity": "2.000",
+      "quantity_before": "60.000",
+      "quantity_after": "58.000",
+      "unit_price": null,
+      "delivery_charge": null,
+      "performed_by": {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@example.com",
+        "role": "ADMIN"
+      },
+      "project": null,
+      "related_movement": null,
+      "note": "Physical count found 2 missing",
+      "created_at": "2026-09-14T22:17:36.699528+06:00"
+    },
+    "stock_entries": [
+      {
+        "id": 2,
+        "location": "A21",
+        "chamber": 5,
+        "component": {
+          "id": 2,
+          "name": "LM7805 Voltage Regulator",
+          "part_number": "LM7805",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "58.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.612275+06:00",
+        "updated_at": "2026-09-14T22:17:36.698891+06:00"
+      }
+    ]
+  }
+
+  As a Manager (403):
+  {
+    "success": false,
+    "message": "Only Admins can perform this action."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

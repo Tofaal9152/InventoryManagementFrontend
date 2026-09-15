@@ -1,0 +1,115 @@
+meta {
+  name: preview inventory import
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}inventory/import/preview/
+  body: multipart-form
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+}
+
+body:multipart-form {
+  file: @file()
+}
+
+docs {
+  ## API explanation
+  Import is two steps (FR-1.8): **preview** validates the file and shows what would be
+  created, updated and rejected (nothing is saved); **commit** re-validates the same
+  file and applies every valid row in one transaction. Rejected rows are skipped and
+  listed with the reason. For a downloadable error report, call preview with
+  `?export=xlsx` or `?export=csv`.
+
+  Send `multipart/form-data` with `file` (.xlsx or .csv, max 10 MB, header row
+  first). If the file's headers differ from the template, add a `column_mapping`
+  form field with a JSON object of template field to header, e.g.
+  `{"name": "Component Name", "unit": "UOM"}`.
+
+  Inventory import sets each chamber's quantity to the value in the file (FR-1.7),
+  matching components by `part_number` or name. Admin or Manager. Rows are grouped
+  into `to_create` (empty chamber), `to_update` (quantity changes) and `unchanged`.
+  Rejected (FR-1.9): unknown locations or components, a chamber already holding a
+  different component, fractional quantities for whole-number units, duplicate
+  locations.
+
+  ## API example response
+  {
+    "headers": [
+      "location",
+      "part_number"
+    ],
+    "column_mapping": {
+      "location": "location",
+      "part_number": "part_number",
+      "name": "name",
+      "quantity": "quantity",
+      "note": "note"
+    },
+    "summary": {
+      "to_create": 2,
+      "to_update": 1,
+      "unchanged": 0,
+      "rejected": 1
+    },
+    "to_create": [
+      {
+        "row": 2,
+        "location": "C21",
+        "component": {
+          "id": 7,
+          "name": "AMS1117 3.3V Regulator",
+          "part_number": "AMS1117-3.3",
+          "unit_symbol": "pcs"
+        },
+        "current_quantity": null,
+        "quantity": "150.000",
+        "note": "Opening count"
+      },
+      {
+        "row": 4,
+        "location": "C31",
+        "component": {
+          "id": 8,
+          "name": "Heat Shrink Tube 3mm",
+          "part_number": null,
+          "unit_symbol": "m"
+        },
+        "current_quantity": null,
+        "quantity": "2.500",
+        "note": ""
+      }
+    ],
+    "to_update": [
+      {
+        "row": 3,
+        "location": "A21",
+        "component": {
+          "id": 2,
+          "name": "LM7805 Voltage Regulator",
+          "part_number": "LM7805",
+          "unit_symbol": "pcs"
+        },
+        "current_quantity": "58.000",
+        "quantity": "60.000",
+        "note": "Recount"
+      }
+    ],
+    "unchanged": [],
+    "rejected": [
+      {
+        "row": 5,
+        "reason": "Location B21 already holds a different component (Hookup Wire 22AWG Red)."
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

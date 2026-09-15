@@ -1,14 +1,31 @@
 import { getReportsData } from '../services/report-service.js';
+import { renderErrorState, renderLoadingState } from '../ui/async-state.js';
+import { renderIcon } from '../ui/icons.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters.js';
 
 export async function renderReportsPage(container) {
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading reports…</h2></section>';
-  const reports = await getReportsData();
-  const stockRows = reports.currentStock.map((component) => `<tr><td>${escapeHtml(component.name)}</td><td>${escapeHtml(component.category?.name || '—')}</td><td>${formatQuantity(component.totalQuantity, component.unit?.symbol)}</td><td>${component.locationCount}</td><td>${formatCurrency(component.totalQuantity * component.lastBuyingPrice)}</td></tr>`).join('');
+  renderLoadingState(container, { title: 'Loading reports…', description: 'Preparing stock and activity reports.' });
+
+  let reports;
+  try {
+    reports = await getReportsData();
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load reports',
+      onRetry: () => renderReportsPage(container)
+    });
+    return;
+  }
+  const stockRows = reports.currentStock.length ? reports.currentStock.map((component) => `<tr><td>${escapeHtml(component.name)}</td><td>${escapeHtml(component.category?.name || '—')}</td><td>${formatQuantity(component.totalQuantity, component.unit?.symbol)}</td><td>${component.locationCount}</td><td>${formatCurrency(component.totalQuantity * component.lastBuyingPrice)}</td></tr>`).join('') : '<tr><td colspan="5">No components in the catalogue yet.</td></tr>';
   const lowRows = reports.lowStock.length ? reports.lowStock.map((component) => `<tr><td>${escapeHtml(component.name)}</td><td>${formatQuantity(component.totalQuantity, component.unit?.symbol)}</td><td>${formatQuantity(Math.max(0, component.minimumQuantity - component.totalQuantity), component.unit?.symbol)}</td></tr>`).join('') : '<tr><td colspan="3">No low stock components.</td></tr>';
   const projectRows = reports.projectConsumption.length ? reports.projectConsumption.map((project) => `<tr><td>${escapeHtml(project.name)}</td><td>${project.takeCount}</td><td>${formatCurrency(project.estimatedValue)}</td></tr>`).join('') : '<tr><td colspan="3">No project consumption yet.</td></tr>';
   const movementRows = reports.movements.length ? reports.movements.map((movement) => `<tr><td>${escapeHtml(movement.type)}</td><td>${escapeHtml(movement.component?.name || 'Component')}</td><td>${formatQuantity(movement.quantity, movement.component?.unit?.symbol)}</td><td>${escapeHtml(movement.location)}</td><td>${formatDateTime(movement.timestamp)}</td></tr>`).join('') : '<tr><td colspan="5">No movements yet.</td></tr>';
   const drawer = reports.drawerUtilisation;
-  container.innerHTML = `<section class="overview-page" aria-label="Reports"><div class="report-grid"><section class="detail-card detail-card--wide"><h3>Current stock</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Component</th><th>Category</th><th>Total quantity</th><th>Locations</th><th>Estimated value</th></tr></thead><tbody>${stockRows}</tbody></table></div></section><section class="detail-card"><h3>Low stock</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Component</th><th>Available</th><th>Shortfall</th></tr></thead><tbody>${lowRows}</tbody></table></div></section><section class="detail-card"><h3>Drawer utilisation</h3><div class="utilisation"><strong>${drawer.occupied} / ${drawer.total}</strong><span>drawers occupied</span><p>${drawer.empty} drawers available</p></div></section><section class="detail-card detail-card--wide"><h3>Project consumption</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Project</th><th>Take operations</th><th>Estimated cost</th></tr></thead><tbody>${projectRows}</tbody></table></div></section><section class="detail-card detail-card--wide"><h3>Movement history</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Type</th><th>Component</th><th>Quantity</th><th>Location</th><th>When</th></tr></thead><tbody>${movementRows}</tbody></table></div></section></div></section>`;
+  const restricted = reports.restricted || {};
+  const notAvailable = (key, body) => (restricted[key]
+    ? `<p class="report-restricted">${renderIcon('info')}Your role cannot see this report.</p>`
+    : body);
+  container.innerHTML = `<section class="overview-page" aria-label="Reports"><div class="report-grid"><section class="detail-card detail-card--wide"><h3>Current stock</h3>${notAvailable('currentStock', `<div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Component</th><th>Category</th><th>Total quantity</th><th>Locations</th><th>Estimated value</th></tr></thead><tbody>${stockRows}</tbody></table></div>`)}</section><section class="detail-card"><h3>Low stock</h3>${notAvailable('lowStock', `<div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Component</th><th>Available</th><th>Shortfall</th></tr></thead><tbody>${lowRows}</tbody></table></div>`)}</section><section class="detail-card"><h3>Drawer utilisation</h3><div class="utilisation"><strong>${drawer.occupied} / ${drawer.total}</strong><span>drawers occupied</span><p>${drawer.empty} drawers available</p></div></section><section class="detail-card detail-card--wide"><h3>Project consumption</h3>${notAvailable('projectConsumption', `<div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Project</th><th>Take operations</th><th>Estimated cost</th></tr></thead><tbody>${projectRows}</tbody></table></div>`)}</section><section class="detail-card detail-card--wide"><h3>Movement history</h3><div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>Type</th><th>Component</th><th>Quantity</th><th>Location</th><th>When</th></tr></thead><tbody>${movementRows}</tbody></table></div></section></div></section>`;
 }

@@ -1,0 +1,100 @@
+meta {
+  name: raise requisition for a new part
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}requisitions/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Free-text name of the part. Required when no component is given.
+    "requested_part_name": "ESP32-DevKitC V4",
+
+    // Quantity, > 0. Required.
+    "quantity": "5",
+
+    // Unit id. Required for free-text requisitions.
+    "unit": 1,
+
+    // Active project id. Optional.
+    "project": 1,
+
+    // YYYY-MM-DD. Optional.
+    "needed_by": "2026-10-01",
+
+    // Optional.
+    "reason": "Wireless telemetry for the robot"
+  }
+}
+
+docs {
+  ## API explanation
+  Raises a requisition for a part that isn't in the library yet (FR-4.1). Any
+  role. Give `requested_part_name` and a `unit`. When the order arrives, "receive
+  requisition" creates the library component.
+
+
+  ## API example response
+  {
+    "id": 2,
+    "reference": "REQ-000002",
+    "component": null,
+    "requested_part_name": "ESP32-DevKitC V4",
+    "part_name": "ESP32-DevKitC V4",
+    "quantity": "5.000",
+    "unit": {
+      "id": 1,
+      "name": "Pieces",
+      "symbol": "pcs",
+      "allows_fraction": false
+    },
+    "project": {
+      "id": 1,
+      "name": "Line Follower Robot",
+      "status": "ACTIVE"
+    },
+    "needed_by": "2026-10-01",
+    "reason": "Wireless telemetry for the robot",
+    "status": "PENDING",
+    "status_display": "Pending",
+    "status_changed_at": "2026-09-14T22:17:36.905963+06:00",
+    "days_in_current_status": 0,
+    "requested_by": {
+      "id": 3,
+      "username": "nadia.islam",
+      "email": "nadia.islam@example.com",
+      "role": "STAFF"
+    },
+    "created_at": "2026-09-14T22:17:36.906024+06:00",
+    "updated_at": "2026-09-14T22:17:36.906030+06:00",
+    "allowed_transitions": [
+      "APPROVED",
+      "CANCELLED",
+      "REJECTED"
+    ],
+    "status_history": [
+      {
+        "id": 2,
+        "from_status": "",
+        "to_status": "PENDING",
+        "changed_by": {
+          "id": 3,
+          "username": "nadia.islam",
+          "email": "nadia.islam@example.com",
+          "role": "STAFF"
+        },
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.906810+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

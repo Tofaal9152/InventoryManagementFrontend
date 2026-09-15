@@ -1,0 +1,87 @@
+meta {
+  name: project consumption report
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}reports/project-consumption/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+  ~project: 1
+  ~date_from: 2026-09-01
+  ~date_to: 2026-09-30
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Components consumed per project: taken, returned, net consumed and estimated
+  cost (net x last buying price). Admin or Manager. Filters: `project`,
+  `date_from` / `date_to` (movement dates). `summary.total_estimated_cost` adds
+  them up.
+
+  Like every report (FR-9.1): a paginated JSON table with `columns` (key and header)
+  and, where it applies, a `summary`. Add `?export=xlsx` or `?export=csv` to download
+  the whole report (every page) as a file; quantities are written with their unit symbol.
+
+  ## API example response
+  {
+    "count": 3,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "project_id": 1,
+        "project": "Line Follower Robot",
+        "component_id": 1,
+        "component": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "unit_symbol": "pcs",
+        "quantity_taken": "6.000",
+        "quantity_returned": "2.000",
+        "quantity": "4.000",
+        "last_buying_price": "450.00",
+        "estimated_value": "1800.00"
+      },
+      {
+        "project_id": 1,
+        "project": "Line Follower Robot",
+        "component_id": 3,
+        "component": "Hookup Wire 22AWG Red",
+        "part_number": "UL1007-22-RED",
+        "unit_symbol": "m",
+        "quantity_taken": "12.500",
+        "quantity_returned": "0.000",
+        "quantity": "12.500",
+        "last_buying_price": "8.50",
+        "estimated_value": "106.25"
+      }
+    ],
+    "columns": [
+      {
+        "key": "project",
+        "header": "Project"
+      },
+      {
+        "key": "component",
+        "header": "Component"
+      }
+    ],
+    "summary": {
+      "total_estimated_cost": "5956.25"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

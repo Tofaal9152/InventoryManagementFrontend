@@ -1,0 +1,116 @@
+meta {
+  name: get chamber
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}inventory/chambers/:code/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  code: A11
+}
+
+docs {
+  ## API explanation
+  One chamber by location code (case-insensitive): the page a printed QR label
+  opens (FR-7.8). Any role. Includes `qr_url` (built from
+  `CHAMBER_QR_URL_TEMPLATE`, default `{FRONTEND_URL}/chambers/{code}`) and the
+  last 20 movements in or out of the chamber (Staff see only their own).
+
+
+  ## API example response
+  {
+    "id": 1,
+    "code": "A11",
+    "number": 1,
+    "state": "OCCUPIED",
+    "highlighted": false,
+    "stock_entry": {
+      "id": 1,
+      "quantity": "26.000",
+      "component": {
+        "id": 1,
+        "name": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "unit_symbol": "pcs",
+        "minimum_quantity": "15.000",
+        "total_quantity": "36.000"
+      }
+    },
+    "drawer": {
+      "id": 1,
+      "code": "A1"
+    },
+    "qr_url": "http://myfrontend.com/chambers/A11",
+    "recent_movements": [
+      {
+        "id": 9,
+        "movement_type": "TRANSFER",
+        "movement_type_display": "Transfer",
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "source_location": "A11",
+        "destination_location": "B22",
+        "quantity": "10.000",
+        "quantity_before": null,
+        "quantity_after": null,
+        "unit_price": null,
+        "delivery_charge": null,
+        "performed_by": {
+          "id": 2,
+          "username": "karim.hossain",
+          "email": "karim.hossain@example.com",
+          "role": "MANAGER"
+        },
+        "project": null,
+        "related_movement": null,
+        "note": "Split across drawers",
+        "created_at": "2026-09-14T22:17:36.687281+06:00"
+      },
+      {
+        "id": 6,
+        "movement_type": "RETURN",
+        "movement_type_display": "Return",
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "source_location": null,
+        "destination_location": "A11",
+        "quantity": "2.000",
+        "quantity_before": null,
+        "quantity_after": null,
+        "unit_price": null,
+        "delivery_charge": null,
+        "performed_by": {
+          "id": 3,
+          "username": "nadia.islam",
+          "email": "nadia.islam@example.com",
+          "role": "STAFF"
+        },
+        "project": {
+          "id": 1,
+          "name": "Line Follower Robot",
+          "status": "ACTIVE"
+        },
+        "related_movement": 5,
+        "note": "Two spares not needed",
+        "created_at": "2026-09-14T22:17:36.655904+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

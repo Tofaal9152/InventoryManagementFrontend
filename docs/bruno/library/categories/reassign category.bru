@@ -1,0 +1,57 @@
+meta {
+  name: reassign category
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}library/categories/:id/reassign/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 5
+}
+
+body:json {
+  {
+    // Category id to move the components to. Must be a different category. Required.
+    "target_category": 4,
+
+    // Delete this category once it is empty. Optional, default false.
+    "delete_after": true
+  }
+}
+
+docs {
+  ## API explanation
+  The "reassign then delete" flow (FR-2.2): moves every component in this
+  category to `target_category` and, with `delete_after`, deletes this
+  category in the same transaction. Admin or Manager. Each moved component
+  is audited.
+
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Moved 1 component(s) to Miscellaneous. Deleted category Relays.",
+    "data": {
+      "moved_components": 1,
+      "deleted": true,
+      "target_category": {
+        "id": 4,
+        "name": "Miscellaneous",
+        "description": "Parts without a better home",
+        "component_count": 1,
+        "total_quantity": "0.000",
+        "created_at": "2026-09-14T22:17:36.322699+06:00",
+        "updated_at": "2026-09-14T22:17:36.326993+06:00"
+      }
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

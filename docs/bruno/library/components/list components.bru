@@ -1,0 +1,117 @@
+meta {
+  name: list components
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}library/components/?ordering=name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ordering: name
+  ~search: motor
+  ~category: 1
+  ~unit: 1
+  ~stock_status: below_minimum
+  ~min_price: 10
+  ~max_price: 500
+  ~project: 1
+  ~archived: false
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  The component list (FR-1.3), paginated at 25 rows. Any role. Each row has
+  the image URL, name, part number, category, unit, `total_quantity` across
+  all chambers, `stock_status`, prices, `locations` (chamber codes) and
+  `updated_at`.
+
+  `stock_status` is `OUT_OF_STOCK` (total 0), `LOW_STOCK` (total at or below
+  minimum) or `IN_STOCK`. `is_low_stock` is true whenever the total is at or
+  below the minimum (FR-6.10).
+
+  Filters (FR-1.5): `category`, `unit`, `stock_status` (`in_stock` |
+  `out_of_stock` | `below_minimum`), `min_price` / `max_price` (last buying
+  price), `project` (components taken against that project), `archived`
+  (`false` default | `true` | `all`).
+  Search (FR-1.6): `search` matches name, part number, description and
+  location code.
+  Sorting (FR-1.4): `ordering` = `name` | `part_number` | `category` |
+  `total_quantity` | `last_buying_price` | `updated_at`, prefix `-` for
+  descending.
+
+
+  ## API example response
+  {
+    "count": 5,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 6,
+        "image_url": "",
+        "name": "5V Relay Module",
+        "part_number": null,
+        "category": {
+          "id": 4,
+          "name": "Miscellaneous"
+        },
+        "unit": {
+          "id": 1,
+          "name": "Pieces",
+          "symbol": "pcs",
+          "allows_fraction": false
+        },
+        "total_quantity": "0.000",
+        "minimum_quantity": "0.000",
+        "stock_status": "OUT_OF_STOCK",
+        "is_low_stock": true,
+        "last_buying_price": null,
+        "delivery_charge": null,
+        "locations": [],
+        "is_archived": false,
+        "updated_at": "2026-09-14T22:17:36.516522+06:00"
+      },
+      {
+        "id": 1,
+        "image_url": "https://transfer2.ongshak.com/components-inventory/jgb37-520.jpg",
+        "name": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "category": {
+          "id": 1,
+          "name": "Motors"
+        },
+        "unit": {
+          "id": 1,
+          "name": "Pieces",
+          "symbol": "pcs",
+          "allows_fraction": false
+        },
+        "total_quantity": "36.000",
+        "minimum_quantity": "15.000",
+        "stock_status": "IN_STOCK",
+        "is_low_stock": false,
+        "last_buying_price": "450.00",
+        "delivery_charge": "150.00",
+        "locations": [
+          "A11",
+          "B22"
+        ],
+        "is_archived": false,
+        "updated_at": "2026-09-14T22:17:36.593405+06:00"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

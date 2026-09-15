@@ -1,0 +1,77 @@
+meta {
+  name: create user
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}administrator/users/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Login email, unique (case-insensitive). Required.
+    "email": "karim.hossain@example.com",
+
+    // One of "ADMIN", "MANAGER", "STAFF". Optional, defaults to "STAFF".
+    "role": "MANAGER",
+
+    // Optional.
+    "first_name": "Karim",
+    "last_name": "Hossain",
+
+    // Optional. Omit to create the account without a password and send a reset link instead.
+    "password": "Manager-pass-123"
+
+    // "username" is optional; defaults to the email's local part ("karim.hossain").
+  }
+}
+
+docs {
+  ## API explanation
+  Creates a user (FR-5.3). **Admin only**. The email is marked verified, so the
+  user can log in right away. Without a `password` the account gets an
+  unusable password: send them a reset link with "send password reset". The
+  username defaults to the part of the email before `@`. Audited.
+
+
+  ## API example response
+  {
+    "id": 2,
+    "username": "karim.hossain",
+    "email": "karim.hossain@example.com",
+    "first_name": "Karim",
+    "last_name": "Hossain",
+    "role": "MANAGER",
+    "role_display": "Manager",
+    "is_active": true,
+    "date_joined": "2026-09-14T22:17:36.118724+06:00",
+    "last_login": null
+  }
+
+  Created without a password (201):
+  {
+    "id": 3,
+    "username": "nadia.islam",
+    "email": "nadia.islam@example.com",
+    "first_name": "Nadia",
+    "last_name": "Islam",
+    "role": "STAFF",
+    "role_display": "Staff",
+    "is_active": true,
+    "date_joined": "2026-09-14T22:17:36.249317+06:00",
+    "last_login": null
+  }
+
+  Email already used (case-insensitive) (400):
+  {
+    "success": false,
+    "message": "(email) A user with this email already exists."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

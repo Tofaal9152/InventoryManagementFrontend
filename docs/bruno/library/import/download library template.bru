@@ -1,0 +1,37 @@
+meta {
+  name: download library template
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}library/import/template/?export=csv
+  body: none
+  auth: inherit
+}
+
+params:query {
+  export: csv
+}
+
+docs {
+  ## API explanation
+  Downloads the library import template (FR-1.8) with one example row.
+  Admin or Manager. `export`: `xlsx` (default) | `csv`.
+
+  Columns: `name`*, `part_number`, `category`*, `unit`* (symbol or name of an
+  existing unit), `description`, `manufacturer`, `datasheet_url`,
+  `last_buying_price`, `delivery_charge`, `minimum_quantity`. (* required)
+
+
+  ## API example response
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="library-import-template.csv"
+
+  name,part_number,category,unit,description,manufacturer,datasheet_url,last_buying_price,delivery_charge,minimum_quantity
+  LM7805 Voltage Regulator,LM7805,Regulators,pcs,5V 1.5A linear voltage regulator,Texas Instruments,https://www.ti.com/lit/ds/symlink/lm7805.pdf,25.00,60.00,20
+}
+
+settings {
+  encodeUrl: true
+}

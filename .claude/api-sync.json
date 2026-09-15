@@ -1,0 +1,10 @@
+{
+  "repo": "https://github.com/Ongshak-Tech/MaterialsInventoryBackend/",
+  "branch": "main",
+  "folder": "bruno/componentsInventory",
+  "into": "docs/bruno",
+  "changelog": "docs/api-changes",
+  "fromCommit": "f2b3aea",
+  "syncedCommit": "f2b3aea",
+  "syncedAt": "2026-09-15T07:12:33.663Z"
+}

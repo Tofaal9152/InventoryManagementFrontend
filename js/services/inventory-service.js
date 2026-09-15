@@ -1,4 +1,6 @@
 import { APP_CONFIG } from '../config.js';
+import { apiRequest } from '../api/client.js';
+import { mapCabinet, mapDrawer, mapDrawerMap } from '../api/mappers/inventory.js';
 import { getDemoState, subscribeToDemoStore, updateDemoState } from '../data/demo-store.js';
 import { hasValidationErrors, validateDrawerAssignment, validateQuantity } from '../utils/validation.js';
 
@@ -152,17 +154,48 @@ function createDemoWorkspace() {
   return { groups, cabinets };
 }
 
+/**
+ * The backend keeps one cabinet, and reports 404 until an Admin configures it.
+ * That is an empty workspace, not an error: the page shows the "no cabinet yet"
+ * panel and offers the setup action to whoever is allowed to run it.
+ */
+async function fetchWorkspace() {
+  let dto;
+  try {
+    dto = await apiRequest('inventory/drawer-map/');
+  } catch (error) {
+    if (error?.status === 404) return { cabinets: [], groups: [] };
+    throw error;
+  }
+  return mapDrawerMap(dto);
+}
+
 export async function listCabinets() {
   if (APP_CONFIG.mode === 'demo') {
     return createDemoWorkspace().cabinets;
   }
 
-  throw new Error('Inventory API integration is not configured yet.');
+  return (await fetchWorkspace()).cabinets;
 }
 
 export async function getCabinet(cabinetId) {
   const cabinets = await listCabinets();
-  return cabinets.find((cabinet) => cabinet.id === cabinetId) || null;
+  return cabinets.find((cabinet) => cabinet.id === cabinetId) || cabinets[0] || null;
+}
+
+/** The cabinet's own record: rows, columns and the utilisation summary. */
+export async function getCabinetConfiguration() {
+  if (APP_CONFIG.mode !== 'demo') {
+    try {
+      return mapCabinet(await apiRequest('inventory/cabinet/'));
+    } catch (error) {
+      if (error?.status === 404) return null;
+      throw error;
+    }
+  }
+
+  const [cabinet] = createDemoWorkspace().cabinets;
+  return cabinet || null;
 }
 
 export async function getInventoryWorkspace() {
@@ -170,12 +203,35 @@ export async function getInventoryWorkspace() {
     return createDemoWorkspace();
   }
 
-  throw new Error('Inventory API integration is not configured yet.');
+  return fetchWorkspace();
 }
 
 export async function createCabinet({ name, groupId, rows, columnCount }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Inventory API integration is not configured yet.');
+    // There is one cabinet: PUT both creates it and resizes it.
+    const errors = {};
+    if (!String(name || '').trim()) errors.name = 'Give the cabinet a name.';
+    if (!(Number(rows) >= 1 && Number(rows) <= 9)) errors.rows = 'Rows must be between 1 and 9.';
+    if (!(Number(columnCount) >= 1 && Number(columnCount) <= 26)) errors.columnCount = 'Columns must be between 1 and 26.';
+    if (hasValidationErrors(errors)) throw new CabinetValidationError(errors);
+
+    try {
+      const dto = await apiRequest('inventory/cabinet/', {
+        method: 'PUT',
+        body: { name: String(name).trim(), rows: Number(rows), columns: Number(columnCount) }
+      });
+      return mapCabinet(dto);
+    } catch (error) {
+      if (error?.name === 'ApiRequestError' && error.isValidationError) {
+        throw new CabinetValidationError({
+          name: error.fields.name || '',
+          rows: error.fields.rows || '',
+          columnCount: error.fields.columns || '',
+          ...(Object.keys(error.fields).length ? {} : { name: error.message })
+        });
+      }
+      throw error;
+    }
   }
 
   const normalizedName = String(name || '').trim();
@@ -251,9 +307,59 @@ export function subscribeToInventoryChanges(listener) {
   return () => {};
 }
 
-export async function assignComponentToDrawer({ cabinetId, drawerId, componentId, quantity, note = '' }) {
+/** DRF field names -> the stock form's control names. */
+const STOCK_FIELD_BY_API_NAME = Object.freeze({
+  component: 'componentId',
+  location: 'quantity',
+  source_location: 'quantity',
+  destination_location: 'destinationDrawerId',
+  quantity: 'quantity',
+  new_quantity: 'quantity',
+  project: 'projectId',
+  unit_price: 'unitPrice',
+  delivery_charge: 'deliveryCharge',
+  reason: 'note',
+  note: 'note'
+});
+
+function toStockValidationError(error) {
+  const errors = {};
+  Object.entries(error.fields || {}).forEach(([apiName, message]) => {
+    const field = STOCK_FIELD_BY_API_NAME[apiName];
+    if (field && !errors[field]) errors[field] = message;
+  });
+  if (!Object.keys(errors).length) errors.quantity = error.message;
+  return new StockOperationValidationError(errors);
+}
+
+/**
+ * Every stock endpoint addresses a **chamber code** (`A11`), never a drawer id.
+ * The page passes it as `locationCode`; a missing one means the caller tried to
+ * act on a multi-chamber drawer without choosing a chamber first.
+ */
+async function postStockOperation(path, body, { location } = {}) {
+  if (location !== undefined && !location) {
+    throw new StockOperationValidationError({ quantity: 'Choose a chamber in this drawer first.' });
+  }
+
+  try {
+    return await apiRequest(`inventory/stock/${path}/`, { method: 'POST', body });
+  } catch (error) {
+    if (error?.name === 'ApiRequestError' && error.isValidationError) throw toStockValidationError(error);
+    throw error;
+  }
+}
+
+export async function assignComponentToDrawer({ cabinetId, drawerId, componentId, quantity, note = '', locationCode = '' }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Inventory API integration is not configured yet.');
+    // Assigning is the first add of stock into an empty chamber.
+    if (!componentId) throw new StockOperationValidationError({ componentId: 'Choose a valid Library component.' });
+    return postStockOperation('add', {
+      component: componentId,
+      location: locationCode,
+      quantity: String(quantity),
+      note: String(note || '').trim()
+    }, { location: locationCode });
   }
 
   const state = getDemoState();
@@ -303,9 +409,13 @@ export async function assignComponentToDrawer({ cabinetId, drawerId, componentId
   return getCabinet(cabinetId);
 }
 
-export async function addStock({ cabinetId, drawerId, quantity, note = '', unitPrice = '', deliveryCharge = '' }) {
+export async function addStock({ cabinetId, drawerId, quantity, note = '', unitPrice = '', deliveryCharge = '', locationCode = '', componentId = '' }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Inventory API integration is not configured yet.');
+    const body = { location: locationCode, quantity: String(quantity), note: String(note || '').trim() };
+    if (componentId) body.component = componentId;
+    if (unitPrice !== '') body.unit_price = String(unitPrice);
+    if (deliveryCharge !== '') body.delivery_charge = String(deliveryCharge);
+    return postStockOperation('add', body, { location: locationCode });
   }
 
   updateDemoState((state) => {
@@ -334,9 +444,11 @@ export async function addStock({ cabinetId, drawerId, quantity, note = '', unitP
   });
 }
 
-export async function takeStock({ cabinetId, drawerId, quantity, projectId = '', note = '' }) {
+export async function takeStock({ cabinetId, drawerId, quantity, projectId = '', note = '', locationCode = '' }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Inventory API integration is not configured yet.');
+    const body = { location: locationCode, quantity: String(quantity), note: String(note || '').trim() };
+    if (projectId) body.project = projectId;
+    return postStockOperation('take', body, { location: locationCode });
   }
 
   updateDemoState((state) => {
@@ -363,9 +475,13 @@ export async function takeStock({ cabinetId, drawerId, quantity, projectId = '',
   });
 }
 
-export async function returnStock({ cabinetId, drawerId, quantity, note }) {
+export async function returnStock({ cabinetId, drawerId, quantity, note, locationCode = '' }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Inventory API integration is not configured yet.');
+    return postStockOperation('return', {
+      location: locationCode,
+      quantity: String(quantity),
+      note: String(note || '').trim()
+    }, { location: locationCode });
   }
 
   updateDemoState((state) => {
@@ -390,9 +506,17 @@ export async function returnStock({ cabinetId, drawerId, quantity, note }) {
   });
 }
 
-export async function transferStock({ cabinetId, drawerId, destinationDrawerId, quantity, note = '' }) {
+export async function transferStock({ cabinetId, drawerId, destinationDrawerId, quantity, note = '', locationCode = '', destinationLocationCode = '' }) {
   if (APP_CONFIG.mode !== 'demo') {
-    throw new Error('Inventory API integration is not configured yet.');
+    if (!destinationLocationCode) {
+      throw new StockOperationValidationError({ destinationDrawerId: 'Choose a destination chamber.' });
+    }
+    return postStockOperation('transfer', {
+      source_location: locationCode,
+      destination_location: destinationLocationCode,
+      quantity: String(quantity),
+      note: String(note || '').trim()
+    }, { location: locationCode });
   }
 
   updateDemoState((state) => {
@@ -422,4 +546,70 @@ export async function transferStock({ cabinetId, drawerId, destinationDrawerId, 
     });
     return state;
   });
+}
+
+/** Correct a counted quantity. Admin only, and always audited with a reason. */
+export async function adjustStock({ locationCode, newQuantity, reason }) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Stock adjustment is only available against the backend.');
+  }
+
+  if (!String(reason || '').trim()) {
+    throw new StockOperationValidationError({ note: 'Give a reason for the adjustment.' });
+  }
+
+  return postStockOperation('adjust', {
+    location: locationCode,
+    new_quantity: String(newQuantity),
+    reason: String(reason).trim()
+  }, { location: locationCode });
+}
+
+/** Edit the note on a stock entry. */
+export async function updateStockEntryNote(stockEntryId, note) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Editing stock entries is only available against the backend.');
+  }
+
+  return apiRequest(`inventory/stock-entries/${encodeURIComponent(stockEntryId)}/`, {
+    method: 'PATCH',
+    body: { note: String(note || '').trim() }
+  });
+}
+
+/** Remove an empty stock entry, freeing the chamber. The backend blocks a non-empty one. */
+export async function deleteStockEntry(stockEntryId) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Deleting stock entries is only available against the backend.');
+  }
+
+  return apiRequest(`inventory/stock-entries/${encodeURIComponent(stockEntryId)}/`, { method: 'DELETE' });
+}
+
+/**
+ * How many chambers a drawer is divided into (1-9). Admin only. The server
+ * refuses to reduce while a removed chamber still holds a stock entry.
+ */
+export async function updateDrawerChambers(drawerId, chamberCount) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new CabinetValidationError({ chamberCount: 'Subdividing drawers is only available against the backend.' });
+  }
+
+  const count = Number(chamberCount);
+  if (!Number.isInteger(count) || count < 1 || count > 9) {
+    throw new CabinetValidationError({ chamberCount: 'A drawer can have 1 to 9 chambers.' });
+  }
+
+  try {
+    const payload = await apiRequest(`inventory/drawers/${encodeURIComponent(drawerId)}/`, {
+      method: 'PATCH',
+      body: { chamber_count: count }
+    });
+    return mapDrawer(payload?.data ?? payload);
+  } catch (error) {
+    if (error?.name === 'ApiRequestError' && (error.isValidationError || error.isPermissionError)) {
+      throw new CabinetValidationError({ chamberCount: error.fields.chamber_count || error.message });
+    }
+    throw error;
+  }
 }

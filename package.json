@@ -6,6 +6,6 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "test": "node tests/demo-workflow.mjs"
+    "test": "INVENTORY_MODE=demo node tests/demo-workflow.mjs"
   }
 }

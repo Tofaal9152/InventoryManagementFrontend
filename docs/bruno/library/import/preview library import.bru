@@ -1,0 +1,124 @@
+meta {
+  name: preview library import
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}library/import/preview/
+  body: multipart-form
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+}
+
+body:multipart-form {
+  file: @file()
+}
+
+docs {
+  ## API explanation
+  Import is two steps (FR-1.8): **preview** validates the file and shows what would be
+  created, updated and rejected (nothing is saved); **commit** re-validates the same
+  file and applies every valid row in one transaction. Rejected rows are skipped and
+  listed with the reason. For a downloadable error report, call preview with
+  `?export=xlsx` or `?export=csv`.
+
+  Send `multipart/form-data` with `file` (.xlsx or .csv, max 10 MB, header row
+  first). If the file's headers differ from the template, add a `column_mapping`
+  form field with a JSON object of template field to header, e.g.
+  `{"name": "Component Name", "unit": "UOM"}`.
+
+  Library import creates or updates component definitions (FR-1.7). Admin or Manager.
+  Rows are matched to existing components by `part_number` when given, otherwise by
+  name. Unknown categories are created on commit; unknown units are rejected. On an
+  update, blank optional cells keep the component's current values.
+
+  ## API example response
+  {
+    "headers": [
+      "name",
+      "part_number"
+    ],
+    "column_mapping": {
+      "name": "name",
+      "part_number": "part_number",
+      "category": "category",
+      "unit": "unit",
+      "description": "description",
+      "manufacturer": "manufacturer",
+      "datasheet_url": "datasheet_url",
+      "last_buying_price": "last_buying_price",
+      "delivery_charge": "delivery_charge",
+      "minimum_quantity": "minimum_quantity"
+    },
+    "summary": {
+      "to_create": 2,
+      "to_update": 1,
+      "rejected": 1
+    },
+    "to_create": [
+      {
+        "row": 3,
+        "name": "AMS1117 3.3V Regulator",
+        "part_number": "AMS1117-3.3",
+        "category": "Voltage Regulators",
+        "unit": "pcs",
+        "description": "",
+        "manufacturer": "Advanced Monolithic Systems",
+        "datasheet_url": "",
+        "last_buying_price": "6.50",
+        "delivery_charge": null,
+        "minimum_quantity": "100.000"
+      },
+      {
+        "row": 4,
+        "name": "Heat Shrink Tube 3mm",
+        "part_number": null,
+        "category": "Wire & Cable",
+        "unit": "m",
+        "description": "",
+        "manufacturer": "",
+        "datasheet_url": "",
+        "last_buying_price": "12.00",
+        "delivery_charge": null,
+        "minimum_quantity": "5.000"
+      }
+    ],
+    "to_update": [
+      {
+        "row": 2,
+        "name": "LM7805 Voltage Regulator",
+        "part_number": "LM7805",
+        "category": "Voltage Regulators",
+        "unit": "pcs",
+        "description": "",
+        "manufacturer": "STMicroelectronics",
+        "datasheet_url": "",
+        "last_buying_price": "24.00",
+        "delivery_charge": null,
+        "minimum_quantity": "60.000",
+        "component_id": 2
+      }
+    ],
+    "rejected": [
+      {
+        "row": 5,
+        "reason": "Unknown unit \"crates\". Use the symbol or name of an existing unit."
+      }
+    ]
+  }
+
+  With ?export=csv (error report) (200):
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="library-import-errors.csv"
+
+  Row,Reason
+  5,"Unknown unit ""crates"". Use the symbol or name of an existing unit."
+}
+
+settings {
+  encodeUrl: true
+}

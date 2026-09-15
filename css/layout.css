@@ -8,9 +8,13 @@
   display: flex;
   position: sticky;
   top: 0;
-  min-height: 100vh;
+  /* A fixed viewport box, not min-height: a grid item stretches to the page
+     height, which pushed `margin-top: auto` on the footer below the fold on
+     long pages such as Reports and the Audit log. */
+  height: 100vh;
   flex-direction: column;
   padding: 1rem;
+  overflow-y: auto;
   background: var(--color-sidebar);
   color: #f6f8fc;
 }
@@ -151,7 +155,9 @@
   .app-sidebar {
     position: sticky;
     z-index: 10;
+    height: auto;
     min-height: auto;
+    overflow: visible;
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;

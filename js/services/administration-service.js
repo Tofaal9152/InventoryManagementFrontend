@@ -1,4 +1,11 @@
 import { APP_CONFIG } from '../config.js';
+import { apiRequest } from '../api/client.js';
+import { mapCabinet } from '../api/mappers/inventory.js';
+import { getCabinetConfiguration } from './inventory-service.js';
+import { listCategories, listUnits } from './reference-service.js';
+import { listUsers } from './user-service.js';
+import { mapAuditEvent } from '../api/mappers/administration.js';
+import { apiList } from '../api/client.js';
 import { getDemoState, updateDemoState } from '../data/demo-store.js';
 
 export class CabinetConfigurationError extends Error {
@@ -21,6 +28,35 @@ function addAuditEvent(state, { entity, action, summary }) {
 }
 
 export async function getAdministrationData() {
+  if (APP_CONFIG.mode !== 'demo') {
+    const [cabinet, categories, units, users] = await Promise.all([
+      getCabinetConfiguration(),
+      listCategories(),
+      listUnits(),
+      // Only an Admin may list users; everyone else still gets the rest of the page.
+      listUsers().catch((error) => {
+        if (error?.status === 403) return [];
+        throw error;
+      })
+    ]);
+
+    return {
+      categories: categories.map((category) => ({ ...category, totalQuantity: 0 })),
+      units,
+      // One cabinet, shaped as a list so the settings page keeps iterating.
+      cabinets: cabinet
+        ? [{
+          ...cabinet,
+          columnCount: cabinet.columnCount,
+          drawers: [],
+          occupiedDrawerCount: cabinet.summary.inUse
+        }]
+        : [],
+      users,
+      roles: ['Admin', 'Manager', 'Staff']
+    };
+  }
+
   requireDemoMode();
   const state = getDemoState();
   const componentTotals = new Map();
@@ -39,7 +75,23 @@ export async function getAdministrationData() {
   };
 }
 
-export async function updateCabinetDimensions({ cabinetId, rows, columnCount }) {
+export async function updateCabinetDimensions({ cabinetId, rows, columnCount, name = '' }) {
+  if (APP_CONFIG.mode !== 'demo') {
+    try {
+      const dto = await apiRequest('inventory/cabinet/', {
+        method: 'PUT',
+        body: { name: String(name || 'Main Cabinet').trim(), rows: Number(rows), columns: Number(columnCount) }
+      });
+      return mapCabinet(dto);
+    } catch (error) {
+      // Shrinking over occupied chambers is refused with a reason worth showing.
+      if (error?.name === 'ApiRequestError' && (error.isValidationError || error.status === 409)) {
+        throw new CabinetConfigurationError(error.message);
+      }
+      throw error;
+    }
+  }
+
   requireDemoMode();
   const nextRows = Number(rows);
   const nextColumnCount = Number(columnCount);
@@ -70,6 +122,11 @@ export async function updateCabinetDimensions({ cabinetId, rows, columnCount }) 
 }
 
 export async function getAuditLog() {
+  if (APP_CONFIG.mode !== 'demo') {
+    const { items } = await apiList('administrator/audit-logs/', { params: { page_size: 100 } });
+    return items.map(mapAuditEvent);
+  }
+
   requireDemoMode();
   const state = getDemoState();
   const usersById = new Map(state.users.map((user) => [user.id, user]));

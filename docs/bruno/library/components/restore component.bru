@@ -1,0 +1,77 @@
+meta {
+  name: restore component
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}library/components/:id/restore/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 4
+}
+
+docs {
+  ## API explanation
+  Un-archives a component. Admin or Manager. Audited as `COMPONENT_RESTORED`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Component restored.",
+    "data": {
+      "id": 4,
+      "image_url": "",
+      "name": "NEMA17 Stepper Motor",
+      "part_number": "17HS4401",
+      "category": {
+        "id": 1,
+        "name": "Motors"
+      },
+      "unit": {
+        "id": 1,
+        "name": "Pieces",
+        "symbol": "pcs",
+        "allows_fraction": false
+      },
+      "total_quantity": "0.000",
+      "minimum_quantity": "2.000",
+      "stock_status": "OUT_OF_STOCK",
+      "is_low_stock": true,
+      "last_buying_price": "1350.00",
+      "delivery_charge": null,
+      "locations": [],
+      "is_archived": false,
+      "updated_at": "2026-09-14T22:17:36.840977+06:00",
+      "description": "",
+      "manufacturer": "",
+      "datasheet_url": "",
+      "created_at": "2026-09-14T22:17:36.409438+06:00",
+      "stock_by_location": [],
+      "projects": {
+        "total_estimated_value": "4050.00",
+        "consumption": [
+          {
+            "project": {
+              "id": 2,
+              "name": "Solar Charge Controller"
+            },
+            "quantity_taken": "3.000",
+            "quantity_returned": "0.000",
+            "quantity": "3.000",
+            "last_buying_price": "1350.00",
+            "estimated_value": "4050.00"
+          }
+        ]
+      },
+      "requisitions": []
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

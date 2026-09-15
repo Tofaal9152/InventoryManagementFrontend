@@ -1,0 +1,68 @@
+meta {
+  name: list users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}administrator/users/?is_active=true
+  body: none
+  auth: inherit
+}
+
+params:query {
+  is_active: true
+  ~role: STAFF
+  ~search: nadia
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Paginated list of users, ordered by username. **Admin only** (FR-5.2).
+
+  Filters: `role` (`ADMIN` | `MANAGER` | `STAFF`), `is_active` (`true` |
+  `false`), `search` (username, email, first or last name).
+
+
+  ## API example response
+  {
+    "count": 3,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@example.com",
+        "first_name": "Asha",
+        "last_name": "Rahman",
+        "role": "ADMIN",
+        "role_display": "Admin",
+        "is_active": true,
+        "date_joined": "2026-09-14T22:17:35.562393+06:00",
+        "last_login": null
+      },
+      {
+        "id": 2,
+        "username": "karim.hossain",
+        "email": "karim.hossain@example.com",
+        "first_name": "Karim",
+        "last_name": "Hossain",
+        "role": "MANAGER",
+        "role_display": "Manager",
+        "is_active": true,
+        "date_joined": "2026-09-14T22:17:36.118724+06:00",
+        "last_login": null
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

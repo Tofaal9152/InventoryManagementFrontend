@@ -1,0 +1,72 @@
+meta {
+  name: update component
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}library/components/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    // Any field from "create component"; all optional on PATCH.
+    "minimum_quantity": "15",
+    "description": "12V 107 RPM DC gear motor with hall encoder, 6mm D-shaft"
+  }
+}
+
+docs {
+  ## API explanation
+  Edits a component (PUT for a full update). Admin or Manager. Returns the full
+  detail. Switching to a whole-number unit is rejected while the component
+  has fractional stock. Audited (changed fields only).
+
+
+  ## API example response
+  {
+    "id": 1,
+    "image_url": "https://transfer2.ongshak.com/components-inventory/jgb37-520.jpg",
+    "name": "DC Gear Motor 12V",
+    "part_number": "JGB37-520",
+    "category": {
+      "id": 1,
+      "name": "Motors"
+    },
+    "unit": {
+      "id": 1,
+      "name": "Pieces",
+      "symbol": "pcs",
+      "allows_fraction": false
+    },
+    "total_quantity": "0.000",
+    "minimum_quantity": "15.000",
+    "stock_status": "OUT_OF_STOCK",
+    "is_low_stock": true,
+    "last_buying_price": "450.00",
+    "delivery_charge": "120.00",
+    "locations": [],
+    "is_archived": false,
+    "updated_at": "2026-09-14T22:17:36.428242+06:00",
+    "description": "12V 107 RPM DC gear motor with hall encoder, 6mm D-shaft",
+    "manufacturer": "Chihai Motor",
+    "datasheet_url": "https://example.com/datasheets/jgb37-520.pdf",
+    "created_at": "2026-09-14T22:17:36.365870+06:00",
+    "stock_by_location": [],
+    "projects": {
+      "total_estimated_value": "0.00",
+      "consumption": []
+    },
+    "requisitions": []
+  }
+}
+
+settings {
+  encodeUrl: true
+}

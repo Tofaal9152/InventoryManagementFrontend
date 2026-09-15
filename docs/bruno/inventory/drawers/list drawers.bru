@@ -1,0 +1,57 @@
+meta {
+  name: list drawers
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}inventory/drawers/?row=2
+  body: none
+  auth: inherit
+}
+
+params:query {
+  row: 2
+  ~column: 2
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Active drawers, ordered by row then column. Any role. Filters: `row`, `column`.
+
+  ## API example response
+  {
+    "count": 4,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 5,
+        "cabinet": 1,
+        "code": "A2",
+        "row": 2,
+        "column": 1,
+        "chamber_count": 1,
+        "is_active": true
+      },
+      {
+        "id": 6,
+        "cabinet": 1,
+        "code": "B2",
+        "row": 2,
+        "column": 2,
+        "chamber_count": 1,
+        "is_active": true
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

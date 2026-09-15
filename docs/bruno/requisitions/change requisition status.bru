@@ -1,0 +1,127 @@
+meta {
+  name: change requisition status
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}requisitions/:id/transition/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 2
+}
+
+body:json {
+  {
+    // One of "APPROVED", "ORDERED", "REJECTED", "CANCELLED". Required.
+    "status": "APPROVED",
+
+    // Shown in the status history. Optional.
+    "note": "Approved from the robot budget"
+  }
+}
+
+docs {
+  ## API explanation
+  Moves a requisition to `APPROVED`, `ORDERED`, `REJECTED` or `CANCELLED`
+  (FR-4.3). **Admin only**, except that a requester may cancel their own
+  requisition while it's `PENDING`. Each change records the actor, time,
+  previous status and note, and is audited. `RECEIVED` goes through "receive
+  requisition" so the stock gets added.
+
+  Lifecycle (FR-4.2):
+  - `PENDING` -> `APPROVED`, `REJECTED`, `CANCELLED`
+  - `APPROVED` -> `ORDERED`, `CANCELLED`
+  - `ORDERED` -> `RECEIVED` (through "receive requisition"), `CANCELLED`
+  - `RECEIVED`, `REJECTED`, `CANCELLED` are terminal
+
+  ## API example response
+  {
+    "success": true,
+    "message": "REQ-000002 is now approved.",
+    "data": {
+      "id": 2,
+      "reference": "REQ-000002",
+      "component": null,
+      "requested_part_name": "ESP32-DevKitC V4",
+      "part_name": "ESP32-DevKitC V4",
+      "quantity": "5.000",
+      "unit": {
+        "id": 1,
+        "name": "Pieces",
+        "symbol": "pcs",
+        "allows_fraction": false
+      },
+      "project": {
+        "id": 1,
+        "name": "Line Follower Robot",
+        "status": "ACTIVE"
+      },
+      "needed_by": "2026-10-01",
+      "reason": "Wireless telemetry for the robot",
+      "status": "APPROVED",
+      "status_display": "Approved",
+      "status_changed_at": "2026-09-14T22:17:36.938794+06:00",
+      "days_in_current_status": 0,
+      "requested_by": {
+        "id": 3,
+        "username": "nadia.islam",
+        "email": "nadia.islam@example.com",
+        "role": "STAFF"
+      },
+      "created_at": "2026-09-14T22:17:36.906024+06:00",
+      "updated_at": "2026-09-14T22:17:36.938829+06:00",
+      "allowed_transitions": [
+        "CANCELLED",
+        "ORDERED"
+      ],
+      "status_history": [
+        {
+          "id": 2,
+          "from_status": "",
+          "to_status": "PENDING",
+          "changed_by": {
+            "id": 3,
+            "username": "nadia.islam",
+            "email": "nadia.islam@example.com",
+            "role": "STAFF"
+          },
+          "note": "",
+          "created_at": "2026-09-14T22:17:36.906810+06:00"
+        },
+        {
+          "id": 5,
+          "from_status": "PENDING",
+          "to_status": "APPROVED",
+          "changed_by": {
+            "id": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "role": "ADMIN"
+          },
+          "note": "Approved from the robot budget",
+          "created_at": "2026-09-14T22:17:36.939476+06:00"
+        }
+      ]
+    }
+  }
+
+  Not an allowed next status (400):
+  {
+    "success": false,
+    "message": "A rejected requisition cannot be changed to ordered."
+  }
+
+  Staff approving (403):
+  {
+    "success": false,
+    "message": "Only Admins can change requisition status. Requesters can cancel their own requisition while it is pending."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

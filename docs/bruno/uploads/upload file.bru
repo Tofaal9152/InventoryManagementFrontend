@@ -1,0 +1,41 @@
+meta {
+  name: upload file
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}upload/
+  body: multipart-form
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file()
+}
+
+docs {
+  ## API explanation
+  Uploads a file (e.g. a component image) to the external transfer.ongshak.com
+  storage service and returns its URL (`utils.views.UploadFile`). Any role.
+  Store the URL on the relevant field, e.g. `image_url` on library/components.
+
+  `file` is the only field, max 20 MB. A `.jpg`/`.jpeg`/`.png` over 2 MB is
+  sent with `compression_level=50`. Requires `TRANSFER_ONGSHAK_API_KEY` in
+  `server/.env`.
+
+  The success response below is not confirmed: this endpoint calls a paid
+  external service and was not exercised live. Treat the `url` field name as
+  provisional until verified against a real upload.
+
+
+  ## API example response
+  {
+    "success": true,
+    "url": "https://transfer2.ongshak.com/components-inventory/1a2b3c4d.jpg"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

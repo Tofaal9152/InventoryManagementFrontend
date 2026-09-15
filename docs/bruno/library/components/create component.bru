@@ -1,0 +1,106 @@
+meta {
+  name: create component
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}library/components/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Display name, max 255 characters. Required.
+    "name": "DC Gear Motor 12V",
+
+    // Manufacturer part number / MPN. Optional, but unique (case-insensitive) when given.
+    "part_number": "JGB37-520",
+
+    // Category id (library/categories). Required.
+    "category": 1,
+
+    // Unit id (library/units). Required. Decides whether quantities may be fractional.
+    "unit": 1,
+
+    // Optional. Rich text (HTML) is allowed.
+    "description": "12V 107 RPM DC gear motor with hall encoder",
+
+    // Optional, max 255 characters.
+    "manufacturer": "Chihai Motor",
+
+    // Optional URLs. image_url comes from POST upload/.
+    "datasheet_url": "https://example.com/datasheets/jgb37-520.pdf",
+    "image_url": "https://transfer2.ongshak.com/components-inventory/jgb37-520.jpg",
+
+    // Optional, BDT with 2 decimals, >= 0. Overwritten when stock is added with a price.
+    "last_buying_price": "450.00",
+    "delivery_charge": "120.00",
+
+    // Low-stock threshold in the component's unit. Optional, default 0.
+    "minimum_quantity": "10"
+  }
+}
+
+docs {
+  ## API explanation
+  Creates a component (FR-1.1). Admin or Manager. Returns the full component
+  detail. Quantities follow the unit's fraction rule. Upload the image first
+  with uploads/upload file and send the returned URL as `image_url`.
+  Audited.
+
+
+  ## API example response
+  {
+    "id": 1,
+    "image_url": "https://transfer2.ongshak.com/components-inventory/jgb37-520.jpg",
+    "name": "DC Gear Motor 12V",
+    "part_number": "JGB37-520",
+    "category": {
+      "id": 1,
+      "name": "Motors"
+    },
+    "unit": {
+      "id": 1,
+      "name": "Pieces",
+      "symbol": "pcs",
+      "allows_fraction": false
+    },
+    "total_quantity": "0.000",
+    "minimum_quantity": "10.000",
+    "stock_status": "OUT_OF_STOCK",
+    "is_low_stock": true,
+    "last_buying_price": "450.00",
+    "delivery_charge": "120.00",
+    "locations": [],
+    "is_archived": false,
+    "updated_at": "2026-09-14T22:17:36.365880+06:00",
+    "description": "12V 107 RPM DC gear motor with hall encoder",
+    "manufacturer": "Chihai Motor",
+    "datasheet_url": "https://example.com/datasheets/jgb37-520.pdf",
+    "created_at": "2026-09-14T22:17:36.365870+06:00",
+    "stock_by_location": [],
+    "projects": {
+      "total_estimated_value": "0.00",
+      "consumption": []
+    },
+    "requisitions": []
+  }
+
+  Part number already used (case-insensitive) (400):
+  {
+    "success": false,
+    "message": "(part_number) A component with this part number already exists."
+  }
+
+  Fractional minimum for a whole-number unit (400):
+  {
+    "success": false,
+    "message": "Pieces (pcs) does not allow fractional quantities."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

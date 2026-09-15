@@ -1,0 +1,76 @@
+meta {
+  name: update drawer chambers
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}inventory/drawers/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 6
+}
+
+body:json {
+  {
+    // Number of chambers in this drawer, 1-9. Required.
+    "chamber_count": 3
+  }
+}
+
+docs {
+  ## API explanation
+  Sets how many chambers (1-9) a drawer has (FR-7.2). **Admin only**. New
+  chambers get the next codes (e.g. `B22`, `B23`). Reducing is blocked while
+  a removed chamber holds a stock entry (FR-7.4). Audited as
+  `CABINET_LAYOUT_CHANGED`.
+
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Drawer updated.",
+    "data": {
+      "id": 6,
+      "cabinet": 1,
+      "code": "B2",
+      "row": 2,
+      "column": 2,
+      "chamber_count": 3,
+      "is_active": true,
+      "chambers": [
+        {
+          "id": 6,
+          "code": "B21",
+          "number": 1,
+          "state": "EMPTY",
+          "highlighted": false,
+          "stock_entry": null
+        },
+        {
+          "id": 13,
+          "code": "B22",
+          "number": 2,
+          "state": "EMPTY",
+          "highlighted": false,
+          "stock_entry": null
+        },
+        {
+          "id": 14,
+          "code": "B23",
+          "number": 3,
+          "state": "EMPTY",
+          "highlighted": false,
+          "stock_entry": null
+        }
+      ]
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

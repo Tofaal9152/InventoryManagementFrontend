@@ -1,0 +1,113 @@
+meta {
+  name: add stock
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}inventory/stock/add/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Component id. Required. Archived components can't receive stock.
+    "component": 1,
+
+    // Chamber location code. Required.
+    "location": "A11",
+
+    // Quantity in the component's unit, > 0, up to 3 decimals if the unit allows. Required.
+    "quantity": "40",
+
+    // Optional, BDT. Overwrite the component's last_buying_price / delivery_charge.
+    "unit_price": "450.00",
+    "delivery_charge": "150.00",
+
+    // Optional.
+    "note": "Initial purchase"
+  }
+}
+
+docs {
+  ## API explanation
+  Puts new stock into a chamber (FR-6.4). Admin or Manager. The chamber must
+  be empty or already hold this component. When `unit_price` /
+  `delivery_charge` are given they overwrite the component's last buying price
+  and delivery charge.
+
+  Rules shared by every stock operation (FR-6):
+  - Locations are chamber codes such as `A11` (case-insensitive).
+  - A chamber holds one component type (FR-6.2).
+  - Quantities must be greater than zero and whole numbers for units that don't allow fractions.
+  - Each operation writes an immutable movement (FR-6.5) and runs with row locks, so concurrent operations can't drive a chamber below zero (FR-6.11).
+  - The response has the `movement` and the resulting `stock_entries`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Stock added.",
+    "movement": {
+      "id": 1,
+      "movement_type": "ADD",
+      "movement_type_display": "Add",
+      "component": {
+        "id": 1,
+        "name": "DC Gear Motor 12V",
+        "part_number": "JGB37-520",
+        "unit_symbol": "pcs"
+      },
+      "source_location": null,
+      "destination_location": "A11",
+      "quantity": "40.000",
+      "quantity_before": null,
+      "quantity_after": null,
+      "unit_price": "450.00",
+      "delivery_charge": "150.00",
+      "performed_by": {
+        "id": 2,
+        "username": "karim.hossain",
+        "email": "karim.hossain@example.com",
+        "role": "MANAGER"
+      },
+      "project": null,
+      "related_movement": null,
+      "note": "Initial purchase",
+      "created_at": "2026-09-14T22:17:36.594539+06:00"
+    },
+    "stock_entries": [
+      {
+        "id": 1,
+        "location": "A11",
+        "chamber": 1,
+        "component": {
+          "id": 1,
+          "name": "DC Gear Motor 12V",
+          "part_number": "JGB37-520",
+          "unit_symbol": "pcs"
+        },
+        "quantity": "40.000",
+        "note": "",
+        "created_at": "2026-09-14T22:17:36.591057+06:00",
+        "updated_at": "2026-09-14T22:17:36.591063+06:00"
+      }
+    ]
+  }
+
+  Chamber holds a different component (400):
+  {
+    "success": false,
+    "message": "Location A11 already holds DC Gear Motor 12V. A chamber can only hold one component type."
+  }
+
+  As Staff (403):
+  {
+    "success": false,
+    "message": "Only Admins and Managers can perform this action."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

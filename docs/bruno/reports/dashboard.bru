@@ -1,0 +1,126 @@
+meta {
+  name: dashboard
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}reports/dashboard/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~days: 30
+}
+
+docs {
+  ## API explanation
+  Dashboard tiles (FR-9.3). Any role: total components (non-archived), total
+  stock value (quantity x last buying price), low-stock count (in stock but at
+  or below minimum), out-of-stock count, pending requisitions, drawer
+  utilisation, the 10 most recent movements (Staff see only their own), and
+  the 5 most consumed components (net takes minus returns) over the last
+  `days` days (default 30, max 365).
+
+
+  ## API example response
+  {
+    "total_components": 8,
+    "total_stock_value": "22048.00",
+    "low_stock_count": 3,
+    "out_of_stock_count": 2,
+    "pending_requisitions": 0,
+    "drawer_utilisation": {
+      "total_chambers": 14,
+      "in_use": 7,
+      "empty": 7,
+      "utilisation_percent": 50.0
+    },
+    "recent_movements": [
+      {
+        "id": 14,
+        "movement_type": "ADD",
+        "movement_type_display": "Add",
+        "component": {
+          "id": 9,
+          "name": "ESP32-DevKitC V4",
+          "part_number": "ESP32-DEVKITC-V4",
+          "unit_symbol": "pcs"
+        },
+        "source_location": null,
+        "destination_location": "D11",
+        "quantity": "5.000",
+        "quantity_before": null,
+        "quantity_after": null,
+        "unit_price": "650.00",
+        "delivery_charge": "100.00",
+        "performed_by": {
+          "id": 1,
+          "username": "admin",
+          "email": "admin@example.com",
+          "role": "ADMIN"
+        },
+        "project": null,
+        "related_movement": null,
+        "note": "Received against REQ-000002. Invoice TS-10492",
+        "created_at": "2026-09-14T22:17:36.991392+06:00"
+      },
+      {
+        "id": 13,
+        "movement_type": "ADJUST",
+        "movement_type_display": "Adjust",
+        "component": {
+          "id": 2,
+          "name": "LM7805 Voltage Regulator",
+          "part_number": "LM7805",
+          "unit_symbol": "pcs"
+        },
+        "source_location": null,
+        "destination_location": "A21",
+        "quantity": "2.000",
+        "quantity_before": "58.000",
+        "quantity_after": "60.000",
+        "unit_price": null,
+        "delivery_charge": null,
+        "performed_by": {
+          "id": 2,
+          "username": "karim.hossain",
+          "email": "karim.hossain@example.com",
+          "role": "MANAGER"
+        },
+        "project": null,
+        "related_movement": null,
+        "note": "Inventory import: Recount",
+        "created_at": "2026-09-14T22:17:36.889364+06:00"
+      }
+    ],
+    "most_consumed_components": {
+      "days": 30,
+      "results": [
+        {
+          "component": {
+            "id": 3,
+            "name": "Hookup Wire 22AWG Red",
+            "part_number": "UL1007-22-RED",
+            "unit_symbol": "m"
+          },
+          "quantity_consumed": "12.500"
+        },
+        {
+          "component": {
+            "id": 1,
+            "name": "DC Gear Motor 12V",
+            "part_number": "JGB37-520",
+            "unit_symbol": "pcs"
+          },
+          "quantity_consumed": "4.000"
+        }
+      ]
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

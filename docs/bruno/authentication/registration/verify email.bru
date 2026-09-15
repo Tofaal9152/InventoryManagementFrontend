@@ -1,0 +1,41 @@
+meta {
+  name: verify email
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}rest-auth/registration/verify-email/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // The key from the verification e-mail link. Required.
+    "key": "MQ:1u5bXk:PASTE_KEY_FROM_EMAIL"
+  }
+}
+
+docs {
+  ## API explanation
+  Confirms an e-mail address with the `key` from the verification link
+  (`{FRONTEND_URL}/auth/email/confirm/<key>`). Public. An unknown or
+  already-used key returns 404.
+
+
+  ## API example response
+  {
+    "detail": "ok"
+  }
+
+  Unknown or already-used key (404):
+  {
+    "success": false,
+    "message": "Not found."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,95 @@
+meta {
+  name: get component
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}library/components/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  ## API explanation
+  Component detail page (FR-1.11). Any role. Adds `stock_by_location`, `projects`
+  (net quantity consumed per project, with estimated value = quantity x last
+  buying price) and `requisitions`. The full movement history is at
+  inventory/movements/list movements with `?component=<id>`.
+
+
+  ## API example response
+  {
+    "id": 1,
+    "image_url": "https://transfer2.ongshak.com/components-inventory/jgb37-520.jpg",
+    "name": "DC Gear Motor 12V",
+    "part_number": "JGB37-520",
+    "category": {
+      "id": 1,
+      "name": "Motors"
+    },
+    "unit": {
+      "id": 1,
+      "name": "Pieces",
+      "symbol": "pcs",
+      "allows_fraction": false
+    },
+    "total_quantity": "36.000",
+    "minimum_quantity": "15.000",
+    "stock_status": "IN_STOCK",
+    "is_low_stock": false,
+    "last_buying_price": "450.00",
+    "delivery_charge": "150.00",
+    "locations": [
+      "A11",
+      "B22"
+    ],
+    "is_archived": false,
+    "updated_at": "2026-09-14T22:17:36.593405+06:00",
+    "description": "12V 107 RPM DC gear motor with hall encoder, 6mm D-shaft",
+    "manufacturer": "Chihai Motor",
+    "datasheet_url": "https://example.com/datasheets/jgb37-520.pdf",
+    "created_at": "2026-09-14T22:17:36.365870+06:00",
+    "stock_by_location": [
+      {
+        "stock_entry_id": 1,
+        "location": "A11",
+        "quantity": "26.000",
+        "note": "Top shelf, left side",
+        "updated_at": "2026-09-14T22:17:36.712577+06:00"
+      },
+      {
+        "stock_entry_id": 5,
+        "location": "B22",
+        "quantity": "10.000",
+        "note": "",
+        "updated_at": "2026-09-14T22:17:36.686777+06:00"
+      }
+    ],
+    "projects": {
+      "total_estimated_value": "1800.00",
+      "consumption": [
+        {
+          "project": {
+            "id": 1,
+            "name": "Line Follower Robot"
+          },
+          "quantity_taken": "6.000",
+          "quantity_returned": "2.000",
+          "quantity": "4.000",
+          "last_buying_price": "450.00",
+          "estimated_value": "1800.00"
+        }
+      ]
+    },
+    "requisitions": []
+  }
+}
+
+settings {
+  encodeUrl: true
+}

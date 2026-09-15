@@ -70,7 +70,8 @@ function componentFormMarkup(component, references) {
       </div>
       <div class="field">
         <label class="field__label" for="component-manufacturer">Manufacturer</label>
-        <input class="field__control" id="component-manufacturer" name="manufacturer" value="${value('manufacturer')}">
+        <input class="field__control" id="component-manufacturer" name="manufacturer" value="${value('manufacturer')}" aria-describedby="component-manufacturer-error">
+        <span class="field__error" id="component-manufacturer-error"></span>
       </div>
       <div class="field">
         <label class="field__label" for="component-category">Category</label>
@@ -102,13 +103,24 @@ function componentFormMarkup(component, references) {
         <span class="field__error" id="component-delivery-charge-error"></span>
       </div>
       <div class="field field--wide">
-        <label class="field__label" for="component-datasheet">Datasheet URL</label>
-        <input class="field__control" id="component-datasheet" name="datasheetUrl" type="url" value="${value('datasheetUrl')}" aria-describedby="component-datasheet-error">
+        <label class="field__label" for="component-datasheet">Datasheet <span aria-hidden="true">(optional)</span></label>
+        <input class="field__control" id="component-datasheet" name="datasheetUrl" type="url"
+               placeholder="https://example.com/datasheet.pdf" value="${value('datasheetUrl')}"
+               aria-describedby="component-datasheet-error">
         <span class="field__error" id="component-datasheet-error"></span>
+        <div class="field-upload">
+          <span class="field-upload__or">or upload a file</span>
+          <input class="field__control field-upload__input" id="component-datasheet-file" name="datasheetFile" type="file"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,image/*,application/pdf"
+                 aria-describedby="component-datasheet-file-error">
+          <span class="field__error" id="component-datasheet-file-error"></span>
+          <span class="component-image-hint" data-datasheet-hint>A chosen file is uploaded on save and replaces the URL above. Maximum 20 MB.</span>
+        </div>
       </div>
       <div class="field field--wide">
         <label class="field__label" for="component-description">Description <span aria-hidden="true">(optional)</span></label>
-        <textarea class="field__control" id="component-description" name="description" rows="3">${value('description')}</textarea>
+        <textarea class="field__control" id="component-description" name="description" rows="3" aria-describedby="component-description-error">${value('description')}</textarea>
+        <span class="field__error" id="component-description-error"></span>
       </div>
     </div>
     <div class="dialog__actions">
@@ -126,6 +138,19 @@ export async function openComponentModal({ component = null, onSaved } = {}) {
   form.innerHTML = componentFormMarkup(component, references);
   const imageInput = form.elements.imageFile;
   const imagePreview = form.querySelector('[data-component-image-preview]');
+
+  const datasheetInput = form.elements.datasheetFile;
+  const datasheetUrlInput = form.elements.datasheetUrl;
+  const datasheetHint = form.querySelector('[data-datasheet-hint]');
+
+  datasheetInput.addEventListener('change', () => {
+    const file = datasheetInput.files?.[0];
+    setFieldError(datasheetInput, file && file.size > 20 * 1024 * 1024 ? 'Files must be 20 MB or smaller.' : '');
+    datasheetUrlInput.disabled = Boolean(file);
+    datasheetHint.textContent = file
+      ? `“${file.name}” will be uploaded on save and used as the datasheet link.`
+      : 'A chosen file is uploaded on save and replaces the URL above. Maximum 20 MB.';
+  });
 
   imageInput.addEventListener('change', () => {
     const imageFile = imageInput.files?.[0];
@@ -158,8 +183,16 @@ export async function openComponentModal({ component = null, onSaved } = {}) {
       const formData = Object.fromEntries(new FormData(form));
       delete formData.imageFile;
       delete formData.removeImage;
+      delete formData.datasheetFile;
+
+      const datasheetFile = datasheetInput.files?.[0] || null;
+      if (datasheetFile && datasheetFile.size > 20 * 1024 * 1024) {
+        setFieldError(datasheetInput, 'Files must be 20 MB or smaller.');
+        return;
+      }
       const image = imageFile ? await readImageFile(imageFile) : form.elements.removeImage?.checked ? null : component?.image || null;
-      const savedComponent = await saveComponent({ id: component?.id, ...formData, image });
+      // Live mode uploads the raw file; demo mode keeps the data URL it just read.
+      const savedComponent = await saveComponent({ id: component?.id, ...formData, image, imageFile, datasheetFile });
       modal.close('saved');
       showToast(component ? 'Component updated.' : 'Component created.');
       await onSaved?.(savedComponent);

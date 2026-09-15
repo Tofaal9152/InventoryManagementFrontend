@@ -2,12 +2,19 @@ import {
   getComponent,
   getComponentDetails,
   getComponentReferenceData,
-  listComponents
+  listComponents,
+  setComponentArchived
 } from '../services/component-service.js';
 import { openComponentModal } from '../ui/component-modal.js';
 import { escapeHtml } from '../utils/dom.js';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters.js';
 import { renderIcon, renderStatusIcon } from '../ui/icons.js';
+import { canManageLibrary } from '../services/permission-service.js';
+import { renderErrorState, renderLoadingState } from '../ui/async-state.js';
+import { confirmAction } from '../ui/confirm-dialog.js';
+import { downloadExport } from '../services/file-service.js';
+import { showToast } from '../ui/toast.js';
+import { APP_CONFIG } from '../config.js';
 
 const pageSize = 8;
 let libraryState = { query: '', categoryId: '', unitId: '', stockStatus: 'all', page: 1 };
@@ -48,7 +55,7 @@ function renderLibraryRows(components) {
       <td>${formatDateTime(component.updatedOn)}</td>
       <td class="table-actions">
         <a class="table-action" href="/library/${component.id}" data-route-link>${renderIcon('view')}View details</a>
-        <button class="table-action" type="button" data-edit-component-id="${component.id}">${renderIcon('edit')}Edit</button>
+        ${canManageLibrary() ? `<button class="table-action" type="button" data-edit-component-id="${component.id}">${renderIcon('edit')}Edit</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -102,6 +109,31 @@ function bindLibraryEvents(container, totalItems, signal) {
       return;
     }
 
+    const exportButton = event.target.closest('[data-export-components]');
+    if (exportButton) {
+      exportButton.disabled = true;
+      exportButton.setAttribute('aria-busy', 'true');
+      try {
+        // Exports honour the filters on screen, so you get what you are looking at.
+        await downloadExport('library/components/export/', {
+          params: {
+            search: libraryState.query || '',
+            category: libraryState.categoryId || '',
+            unit: libraryState.unitId || '',
+            stock_status: { stocked: 'in_stock', low: 'below_minimum', out: 'out_of_stock' }[libraryState.stockStatus] || ''
+          },
+          filename: 'components.xlsx'
+        });
+        showToast('Export downloaded.');
+      } catch (error) {
+        showToast(error?.message || 'The export could not be downloaded.', { type: 'error' });
+      } finally {
+        exportButton.disabled = false;
+        exportButton.removeAttribute('aria-busy');
+      }
+      return;
+    }
+
     const pageButton = event.target.closest('[data-library-page]');
     if (pageButton) {
       const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -114,11 +146,23 @@ function bindLibraryEvents(container, totalItems, signal) {
 
 export async function renderLibraryPage(container) {
   destroyLibraryPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading Library…</h2><p class="state-panel__description">Preparing component records.</p></section>';
-  const [references, components] = await Promise.all([
-    getComponentReferenceData(),
-    listComponents(libraryState)
-  ]);
+  renderLoadingState(container, { title: 'Loading Library…', description: 'Preparing component records.' });
+
+  let references;
+  let components;
+  try {
+    [references, components] = await Promise.all([
+      getComponentReferenceData(),
+      listComponents(libraryState)
+    ]);
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load the Library',
+      onRetry: () => renderLibraryPage(container)
+    });
+    return;
+  }
   const pageCount = Math.max(1, Math.ceil(components.length / pageSize));
   libraryState.page = Math.min(libraryState.page, pageCount);
   const startIndex = (libraryState.page - 1) * pageSize;
@@ -148,7 +192,10 @@ export async function renderLibraryPage(container) {
             <option value="out" ${libraryState.stockStatus === 'out' ? 'selected' : ''}>Out of stock</option>
           </select>
         </section>
-        <button class="button" type="button" data-create-component>${renderIcon('plus')}New component</button>
+        ${canManageLibrary() && APP_CONFIG.mode !== 'demo'
+          ? `<button class="button button--secondary" type="button" data-export-components>${renderIcon('export')}Export</button>`
+          : ''}
+        ${canManageLibrary() ? `<button class="button" type="button" data-create-component>${renderIcon('plus')}New component</button>` : ''}
       </section>
       ${visibleComponents.length ? `
         <div class="library-table-wrap">
@@ -158,7 +205,7 @@ export async function renderLibraryPage(container) {
           </table>
         </div>
         ${renderPagination(components.length)}
-      ` : `<section class="state-panel"><h3 class="state-panel__title">${renderIcon('search')}No components found</h3><p class="state-panel__description">Change the filters or create a new Library component.</p></section>`}
+      ` : `<section class="state-panel"><h3 class="state-panel__title">${renderIcon('search')}No components found</h3><p class="state-panel__description">${canManageLibrary() ? 'Change the filters or create a new Library component.' : 'Change the filters to see other components.'}</p></section>`}
     </section>
   `;
 
@@ -166,10 +213,51 @@ export async function renderLibraryPage(container) {
   bindLibraryEvents(container, components.length, libraryEventController.signal);
 }
 
+async function handleArchive(container, componentId, component, button) {
+  const archiving = button.dataset.archived !== 'true';
+  const stockNote = component.totalQuantity > 0
+    ? ` It still holds ${formatQuantity(component.totalQuantity, component.unit?.symbol)} in ${component.locationCount} location${component.locationCount === 1 ? '' : 's'}; that stock and its history stay.`
+    : '';
+
+  const confirmed = await confirmAction({
+    title: archiving ? `Archive ${component.name}?` : `Restore ${component.name}?`,
+    description: archiving
+      ? `It will be hidden from the Library and cannot receive new stock or requisitions.${stockNote}`
+      : 'It will appear in the Library again and can receive stock and requisitions.',
+    confirmLabel: archiving ? 'Archive component' : 'Restore component',
+    tone: archiving ? 'danger' : 'default'
+  });
+  if (!confirmed) return;
+
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+
+  try {
+    await setComponentArchived(componentId, archiving);
+    showToast(archiving ? 'Component archived.' : 'Component restored.');
+    await renderComponentDetailsPage(container, componentId);
+  } catch (error) {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    showToast(error?.message || 'The component could not be updated.', { type: 'error' });
+  }
+}
+
 export async function renderComponentDetailsPage(container, componentId) {
   destroyLibraryPage();
-  container.innerHTML = '<section class="state-panel"><h2 class="state-panel__title">Loading component…</h2><p class="state-panel__description">Preparing component details.</p></section>';
-  const component = await getComponentDetails(componentId);
+  renderLoadingState(container, { title: 'Loading component…', description: 'Preparing component details.' });
+
+  let component;
+  try {
+    component = await getComponentDetails(componentId);
+  } catch (error) {
+    renderErrorState(container, {
+      error,
+      title: 'Could not load this component',
+      onRetry: () => renderComponentDetailsPage(container, componentId)
+    });
+    return;
+  }
 
   if (!component) {
     container.innerHTML = `<section class="state-panel"><h2 class="state-panel__title">${renderIcon('alert')}Component not found</h2><p class="state-panel__description">This Library record does not exist or may have been removed.</p><a class="button" href="/library" data-route-link>${renderIcon('back')}Back to Library</a></section>`;
@@ -192,7 +280,13 @@ export async function renderComponentDetailsPage(container, componentId) {
         <a class="back-link" href="/library" data-route-link>${renderIcon('back')}Back to Library</a>
         <div class="component-detail-topline__actions">
           ${component.datasheetUrl ? `<a class="button button--secondary" href="${escapeHtml(component.datasheetUrl)}" target="_blank" rel="noreferrer">${renderIcon('datasheet')}Datasheet${renderIcon('external-link')}</a>` : ''}
-          <button class="button" type="button" data-edit-detail-component="${component.id}">${renderIcon('edit')}Edit component</button>
+          ${canManageLibrary() ? `<button class="button" type="button" data-edit-detail-component="${component.id}">${renderIcon('edit')}Edit component</button>` : ''}
+          ${canManageLibrary() && APP_CONFIG.mode !== 'demo'
+            ? `<button class="button button--${component.isArchived ? 'secondary' : 'danger'}" type="button"
+                       data-archive-component="${component.id}" data-archived="${component.isArchived}">
+                 ${renderIcon(component.isArchived ? 'refresh' : 'trash')}${component.isArchived ? 'Restore component' : 'Archive component'}
+               </button>`
+            : ''}
         </div>
       </div>
       <div class="component-detail-workspace">
@@ -247,6 +341,12 @@ export async function renderComponentDetailsPage(container, componentId) {
 
   componentDetailsEventController = new AbortController();
   container.addEventListener('click', async (event) => {
+    const archiveButton = event.target.closest('[data-archive-component]');
+    if (archiveButton) {
+      await handleArchive(container, componentId, component, archiveButton);
+      return;
+    }
+
     const editButton = event.target.closest('[data-edit-detail-component]');
     if (!editButton) return;
     const editableComponent = await getComponent(editButton.dataset.editDetailComponent);

@@ -1,0 +1,44 @@
+meta {
+  name: get cabinet
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}inventory/cabinet/
+  body: none
+  auth: inherit
+}
+
+docs {
+  ## API explanation
+  The cabinet's dimensions plus chamber utilisation. Any role. Version 1 has
+  a single cabinet (FR-7.1). Returns 404 until an Admin configures it.
+
+
+  ## API example response
+  {
+    "id": 1,
+    "name": "Main Cabinet",
+    "rows": 3,
+    "columns": 4,
+    "created_at": "2026-09-14T22:17:36.553232+06:00",
+    "updated_at": "2026-09-14T22:17:36.553237+06:00",
+    "summary": {
+      "total_chambers": 14,
+      "in_use": 4,
+      "empty": 10,
+      "utilisation_percent": 28.6
+    }
+  }
+
+  Not configured yet (404):
+  {
+    "success": false,
+    "message": "The cabinet has not been configured yet. An Admin must set it up with PUT inventory/cabinet/."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

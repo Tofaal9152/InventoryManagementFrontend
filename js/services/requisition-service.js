@@ -1,4 +1,10 @@
 import { APP_CONFIG } from '../config.js';
+import { apiList, apiRequest } from '../api/client.js';
+import { mapRequisition, statusCode } from '../api/mappers/requisitions.js';
+import { mapComponent, mapUnit } from '../api/mappers/library.js';
+import { mapProject } from '../api/mappers/projects.js';
+import { getCurrentUser } from '../api/tokens.js';
+import { canDecideRequisitions } from './permission-service.js';
 import { getDemoState, updateDemoState } from '../data/demo-store.js';
 import { hasValidationErrors, validateQuantity } from '../utils/validation.js';
 
@@ -58,6 +64,19 @@ function decorateRequisition(requisition, references) {
 }
 
 export async function getRequisitionReferenceData() {
+  if (APP_CONFIG.mode !== 'demo') {
+    const [components, units, projects] = await Promise.all([
+      apiList('library/components/', { params: { ordering: 'name', page_size: 100 } }),
+      apiList('library/units/', { params: { page_size: 100 } }),
+      apiList('projects/', { params: { status: 'ACTIVE', ordering: 'name', page_size: 100 } })
+    ]);
+    return {
+      components: components.items.map(mapComponent),
+      units: units.items.map(mapUnit),
+      projects: projects.items.map(mapProject)
+    };
+  }
+
   requireDemoMode();
   const state = getDemoState();
   return {
@@ -68,6 +87,13 @@ export async function getRequisitionReferenceData() {
 }
 
 export async function listRequisitions({ status = 'all' } = {}) {
+  if (APP_CONFIG.mode !== 'demo') {
+    const { items } = await apiList('requisitions/', {
+      params: { status: status === 'all' ? '' : statusCode(status), ordering: '-created_at', page_size: 100 }
+    });
+    return items.map(mapRequisition);
+  }
+
   requireDemoMode();
   const state = getDemoState();
   const references = getReferences(state);
@@ -78,6 +104,15 @@ export async function listRequisitions({ status = 'all' } = {}) {
 }
 
 export async function getRequisition(requisitionId) {
+  if (APP_CONFIG.mode !== 'demo') {
+    try {
+      return mapRequisition(await apiRequest(`requisitions/${encodeURIComponent(requisitionId)}/`));
+    } catch (error) {
+      if (error?.status === 404) return null;
+      throw error;
+    }
+  }
+
   requireDemoMode();
   const state = getDemoState();
   const requisition = state.requisitions.find((item) => item.id === requisitionId);
@@ -85,6 +120,8 @@ export async function getRequisition(requisitionId) {
 }
 
 export async function createRequisition(input) {
+  if (APP_CONFIG.mode !== 'demo') return createRequisitionLive(input);
+
   requireDemoMode();
   const state = getDemoState();
   const references = getReferences(state);
@@ -130,6 +167,27 @@ export async function createRequisition(input) {
 }
 
 export async function updateRequisitionStatus({ requisitionId, status, note = '' }) {
+  if (APP_CONFIG.mode !== 'demo') {
+    const target = statusCode(status);
+    // Receiving adds stock, so it has its own endpoint and its own screen.
+    if (target === 'RECEIVED') {
+      throw new RequisitionValidationError({ status: 'Use Receive to add the delivered stock.' });
+    }
+
+    try {
+      const payload = await apiRequest(`requisitions/${encodeURIComponent(requisitionId)}/transition/`, {
+        method: 'POST',
+        body: { status: target, note: String(note || '').trim() }
+      });
+      return mapRequisition(payload?.data || payload);
+    } catch (error) {
+      if (error?.name === 'ApiRequestError' && (error.isValidationError || error.isPermissionError)) {
+        throw new RequisitionValidationError({ status: error.fields.status || error.message });
+      }
+      throw error;
+    }
+  }
+
   requireDemoMode();
   const state = getDemoState();
   const requisition = state.requisitions.find((item) => item.id === requisitionId);
@@ -150,6 +208,108 @@ export async function updateRequisitionStatus({ requisitionId, status, note = ''
   return getRequisition(requisitionId);
 }
 
-export function getAllowedRequisitionStatuses(status) {
-  return statusTransitions[status] || [];
+/**
+ * Which statuses this requisition may move to next, for the signed-in user.
+ *
+ * The server's `allowed_transitions` answers "what can happen to this
+ * requisition from its current status" — it is not scoped to the reader. The
+ * rule the transition endpoint actually enforces (FR-4.x) is: Admins may make
+ * any of those moves; anyone else may only cancel their **own pending**
+ * requisition. Offering more than that would only earn a 403, so the list is
+ * narrowed here to match. The server stays the authority either way.
+ */
+export function getAllowedRequisitionStatuses(statusOrRequisition) {
+  if (!statusOrRequisition || typeof statusOrRequisition !== 'object') {
+    return statusTransitions[statusOrRequisition] || [];
+  }
+
+  const allowed = statusOrRequisition.allowedTransitions || [];
+  if (canDecideRequisitions()) return allowed;
+
+  const signedIn = getCurrentUser();
+  const signedInId = String(signedIn?.id ?? signedIn?.pk ?? '');
+  const isOwnPending = Boolean(signedInId)
+    && String(statusOrRequisition.requester?.id ?? '') === signedInId
+    && statusOrRequisition.status === 'Pending';
+
+  return isOwnPending ? allowed.filter((status) => status === 'Cancelled') : [];
+}
+
+async function createRequisitionLive(input) {
+  const errors = {};
+  const freeTextPartName = String(input.freeTextPartName || '').trim();
+  const quantity = Number(input.quantity);
+
+  if (!input.componentId && !freeTextPartName) {
+    errors.componentId = 'Choose a Library component or enter the requested part name.';
+  }
+  if (!Number.isFinite(quantity) || quantity <= 0) errors.quantity = 'Enter a quantity greater than zero.';
+  if (!input.componentId && !input.unitId) errors.unitId = 'Choose a unit for the requested part.';
+  if (hasValidationErrors(errors)) throw new RequisitionValidationError(errors);
+
+  const body = {
+    quantity: String(input.quantity),
+    reason: String(input.note || '').trim()
+  };
+  if (input.componentId) body.component = input.componentId;
+  else body.requested_part_name = freeTextPartName;
+  if (input.unitId) body.unit = input.unitId;
+  if (input.projectId) body.project = input.projectId;
+  if (input.neededBy) body.needed_by = input.neededBy;
+
+  try {
+    const payload = await apiRequest('requisitions/', { method: 'POST', body });
+    return mapRequisition(payload?.data || payload);
+  } catch (error) {
+    if (error?.name === 'ApiRequestError' && error.isValidationError) {
+      const fields = error.fields || {};
+      throw new RequisitionValidationError({
+        componentId: fields.component || fields.requested_part_name || '',
+        quantity: fields.quantity || '',
+        unitId: fields.unit || '',
+        projectId: fields.project || '',
+        neededBy: fields.needed_by || '',
+        note: fields.reason || '',
+        status: Object.keys(fields).length ? '' : error.message
+      });
+    }
+    throw error;
+  }
+}
+
+/**
+ * Receiving is the only transition that changes stock: the delivered quantity
+ * lands in a chamber, so it needs a location and, for a free-text request, the
+ * category that the new Library component will be created under.
+ */
+export async function receiveRequisition({ requisitionId, locationCode, quantity, unitPrice = '', deliveryCharge = '', note = '', categoryId = '' }) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Receiving requisitions is only available against the backend.');
+  }
+
+  const errors = {};
+  if (!locationCode) errors.locationCode = 'Choose the chamber the stock goes into.';
+  if (!(Number(quantity) > 0)) errors.quantity = 'Enter the delivered quantity.';
+  if (hasValidationErrors(errors)) throw new RequisitionValidationError(errors);
+
+  const body = { location: locationCode, quantity: String(quantity), note: String(note || '').trim() };
+  if (unitPrice !== '') body.unit_price = String(unitPrice);
+  if (deliveryCharge !== '') body.delivery_charge = String(deliveryCharge);
+  if (categoryId) body.category = categoryId;
+
+  try {
+    const payload = await apiRequest(`requisitions/${encodeURIComponent(requisitionId)}/receive/`, { method: 'POST', body });
+    return mapRequisition(payload?.data || payload);
+  } catch (error) {
+    if (error?.name === 'ApiRequestError' && error.isValidationError) {
+      const fields = error.fields || {};
+      throw new RequisitionValidationError({
+        locationCode: fields.location || '',
+        quantity: fields.quantity || '',
+        categoryId: fields.category || '',
+        status: Object.keys(fields).length ? '' : error.message
+      });
+    }
+    throw error;
+  }
 }

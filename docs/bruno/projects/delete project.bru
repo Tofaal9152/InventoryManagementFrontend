@@ -1,0 +1,35 @@
+meta {
+  name: delete project
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}projects/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 3
+}
+
+docs {
+  ## API explanation
+  Deletes a project. Admin or Manager. Blocked once any movement or
+  requisition references it (FR-8.2); close it instead. Audited.
+
+
+  ## API example response
+  204 No Content (empty body)
+
+  Project already referenced (400):
+  {
+    "success": false,
+    "message": "This record cannot be deleted because it is still referenced by: 1 requisitions, 3 stock movements."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

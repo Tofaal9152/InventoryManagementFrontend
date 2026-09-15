@@ -1,0 +1,84 @@
+meta {
+  name: login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}rest-auth/login/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // Email address of the user. Required.
+    "email": "admin@example.com",
+
+    // Account password. Required.
+    "password": "Admin-pass-123"
+  }
+}
+
+script:post-response {
+  const response = res.body;
+
+  if (response.access) {
+    bru.setVar("accessToken", response.access);
+    bru.setVar("refreshToken", response.refresh);
+  }
+
+  if (response.role === "ADMIN") {
+    bru.setVar("accessTokenAdmin", response.access);
+  }
+
+  if (response.role === "MANAGER") {
+    bru.setVar("accessTokenManager", response.access);
+  }
+
+  if (response.role === "STAFF") {
+    bru.setVar("accessTokenStaff", response.access);
+  }
+}
+
+docs {
+  ## API explanation
+  Authenticates by email and password and returns JWT credentials plus the
+  user's `role` (`ADMIN`, `MANAGER` or `STAFF`). Public. Deactivated users get
+  the same 401 as a wrong password.
+
+  The post-response script stores `access` in `{{accessToken}}` (used by the
+  collection's Bearer auth for every other request) and `refresh` in
+  `{{refreshToken}}`. Run this first.
+
+
+  ## API example response
+  {
+    "success": true,
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "pk": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "first_name": "Asha",
+      "last_name": "Rahman"
+    },
+    "role": "ADMIN"
+  }
+
+  Wrong email or password (401):
+  {
+    "success": false,
+    "message": "Invalid email or password"
+  }
+
+  ## Changelog
+  - 2026-09-14: The post-response script now also stores `accessToken` and `refreshToken`, which the collection's Bearer auth uses automatically.
+  - 2026-09-13: `role` now returns the user's actual role (`"ADMIN"`, `"MANAGER"` or `"STAFF"`) instead of a hardcoded `"CUSTOMER"`/`"ADMIN"` value.
+  - 2026-09-13: Fixed the example request body to use the field name the view actually reads (`email`), replacing the stale `email_reg` key.
+}
+
+settings {
+  encodeUrl: true
+}

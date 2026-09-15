@@ -1,0 +1,44 @@
+meta {
+  name: create unit
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}library/units/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Unique, max 50 characters. Required.
+    "name": "Packs",
+
+    // Unique short symbol shown next to quantities, max 10 characters. Required.
+    "symbol": "pack",
+
+    // Whether quantities may have decimals (up to 3 places). Optional, default false.
+    "allows_fraction": false
+  }
+}
+
+docs {
+  ## API explanation
+  Creates a unit (FR-3.2). Admin or Manager. `name` and `symbol` are unique (case-insensitive). Audited.
+
+  ## API example response
+  {
+    "id": 8,
+    "name": "Packs",
+    "symbol": "pack",
+    "allows_fraction": false,
+    "component_count": 0,
+    "created_at": "2026-09-14T22:17:36.335097+06:00",
+    "updated_at": "2026-09-14T22:17:36.335105+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,61 @@
+meta {
+  name: list chambers
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}inventory/chambers/?state=EMPTY
+  body: none
+  auth: inherit
+}
+
+params:query {
+  state: EMPTY
+  ~drawer: 6
+  ~search: A1
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Active chambers with their state and contents. Any role. Handy for picking
+  a free location: `?state=EMPTY`.
+
+  Filters: `state` (`EMPTY` | `OCCUPIED` | `LOW_STOCK` | `OUT_OF_STOCK`),
+  `drawer` (id), `search` (location code, component name or part number).
+
+
+  ## API example response
+  {
+    "count": 10,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "id": 9,
+        "code": "A31",
+        "number": 1,
+        "state": "EMPTY",
+        "highlighted": false,
+        "stock_entry": null
+      },
+      {
+        "id": 2,
+        "code": "B11",
+        "number": 1,
+        "state": "EMPTY",
+        "highlighted": false,
+        "stock_entry": null
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

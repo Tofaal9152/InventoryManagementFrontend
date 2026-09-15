@@ -1,0 +1,42 @@
+meta {
+  name: reactivate user
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}administrator/users/:id/reactivate/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 4
+}
+
+docs {
+  ## API explanation
+  Reactivates a deactivated user. **Admin only**. Audited as `USER_REACTIVATED`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "User reactivated.",
+    "data": {
+      "id": 4,
+      "username": "former.tech",
+      "email": "former.tech@example.com",
+      "first_name": "",
+      "last_name": "",
+      "role": "STAFF",
+      "role_display": "Staff",
+      "is_active": true,
+      "date_joined": "2026-09-14T22:17:36.296314+06:00",
+      "last_login": null
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

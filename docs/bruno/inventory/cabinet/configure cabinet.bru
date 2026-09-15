@@ -1,0 +1,67 @@
+meta {
+  name: configure cabinet
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{base_url}}inventory/cabinet/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Optional; defaults to "Main Cabinet" when first created.
+    "name": "Main Cabinet",
+
+    // Row count, 1-9. Required.
+    "rows": 3,
+
+    // Column count, 1-26 (A-Z). Required.
+    "columns": 4
+  }
+}
+
+docs {
+  ## API explanation
+  Creates the cabinet (201) or resizes it (200). **Admin only** (FR-7.1).
+  Rows are numbered 1-9 and columns lettered A-Z. Each drawer starts with one
+  chamber, so the location codes run `A11`, `B11`, ... (FR-7.3).
+
+  Shrinking is blocked while any removed chamber holds a stock entry
+  (FR-7.4). Removed drawers and chambers are deactivated rather than deleted,
+  so movement history keeps its locations; growing again reactivates them.
+  Audited as `CABINET_LAYOUT_CHANGED`.
+
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Cabinet created.",
+    "data": {
+      "id": 1,
+      "name": "Main Cabinet",
+      "rows": 3,
+      "columns": 4,
+      "created_at": "2026-09-14T22:17:36.553232+06:00",
+      "updated_at": "2026-09-14T22:17:36.553237+06:00",
+      "summary": {
+        "total_chambers": 12,
+        "in_use": 0,
+        "empty": 12,
+        "utilisation_percent": 0.0
+      }
+    }
+  }
+
+  As a Manager (403):
+  {
+    "success": false,
+    "message": "Only Admins can perform this action."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

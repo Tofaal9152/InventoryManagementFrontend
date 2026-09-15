@@ -1,0 +1,38 @@
+meta {
+  name: get user
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}administrator/users/:id/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 3
+}
+
+docs {
+  ## API explanation
+  One user. **Admin only**.
+
+  ## API example response
+  {
+    "id": 3,
+    "username": "nadia.islam",
+    "email": "nadia.islam@example.com",
+    "first_name": "Nadia",
+    "last_name": "Islam",
+    "role": "STAFF",
+    "role_display": "Staff",
+    "is_active": true,
+    "date_joined": "2026-09-14T22:17:36.249317+06:00",
+    "last_login": null
+  }
+}
+
+settings {
+  encodeUrl: true
+}

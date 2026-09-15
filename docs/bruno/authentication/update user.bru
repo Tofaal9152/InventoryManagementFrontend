@@ -1,0 +1,40 @@
+meta {
+  name: update user
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{base_url}}rest-auth/user/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // All optional on PATCH.
+    "first_name": "Karim",
+    "last_name": "Hossain Khan"
+  }
+}
+
+docs {
+  ## API explanation
+  Updates the logged-in user's own `username`, `first_name` and `last_name`
+  (PUT for a full update). `email` is read-only here; Admins change emails
+  and roles through users/update user.
+
+
+  ## API example response
+  {
+    "pk": 2,
+    "username": "karim.hossain",
+    "email": "karim.hossain@example.com",
+    "first_name": "Karim",
+    "last_name": "Hossain Khan"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

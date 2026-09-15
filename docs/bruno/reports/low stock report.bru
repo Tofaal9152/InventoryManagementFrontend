@@ -1,0 +1,82 @@
+meta {
+  name: low stock report
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}reports/low-stock/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+  ~category: 1
+  ~search: wire
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  Components at or below their minimum quantity, with the `shortfall`
+  (minimum - total), largest first. Admin or Manager. Filters: `category`,
+  `search`.
+
+  Like every report (FR-9.1): a paginated JSON table with `columns` (key and header)
+  and, where it applies, a `summary`. Add `?export=xlsx` or `?export=csv` to download
+  the whole report (every page) as a file; quantities are written with their unit symbol.
+
+  ## API example response
+  {
+    "count": 5,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "component_id": 8,
+        "component": "Heat Shrink Tube 3mm",
+        "part_number": null,
+        "category": "Wire & Cable",
+        "unit_symbol": "m",
+        "total_quantity": "2.500",
+        "minimum_quantity": "5.000",
+        "shortfall": "2.500",
+        "locations": [
+          "C31"
+        ]
+      },
+      {
+        "component_id": 3,
+        "component": "Hookup Wire 22AWG Red",
+        "part_number": "UL1007-22-RED",
+        "category": "Wire & Cable",
+        "unit_symbol": "m",
+        "total_quantity": "18.000",
+        "minimum_quantity": "20.000",
+        "shortfall": "2.000",
+        "locations": [
+          "B21"
+        ]
+      }
+    ],
+    "columns": [
+      {
+        "key": "component",
+        "header": "Component"
+      },
+      {
+        "key": "part_number",
+        "header": "Part number"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

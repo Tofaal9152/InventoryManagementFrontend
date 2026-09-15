@@ -1,0 +1,59 @@
+meta {
+  name: update user
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}administrator/users/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 3
+}
+
+body:json {
+  {
+    // All optional on PATCH.
+    "last_name": "Islam Chowdhury"
+
+    // "role": "MANAGER"   -- one of "ADMIN", "MANAGER", "STAFF"
+    // "email": "nadia@example.com"
+  }
+}
+
+docs {
+  ## API explanation
+  Edits a user's `username`, `email`, `first_name`, `last_name` or `role`
+  (FR-5.3). **Admin only**. Role changes are logged as `USER_ROLE_CHANGED`,
+  other edits as `RECORD_UPDATED`. An Admin can't remove their own Admin role.
+  `is_active` is read-only here: use deactivate/reactivate. Users can't be
+  deleted.
+
+
+  ## API example response
+  {
+    "id": 3,
+    "username": "nadia.islam",
+    "email": "nadia.islam@example.com",
+    "first_name": "Nadia",
+    "last_name": "Islam Chowdhury",
+    "role": "STAFF",
+    "role_display": "Staff",
+    "is_active": true,
+    "date_joined": "2026-09-14T22:17:36.249317+06:00",
+    "last_login": null
+  }
+
+  Admin removing their own Admin role (400):
+  {
+    "success": false,
+    "message": "You cannot remove your own Admin role."
+  }
+}
+
+settings {
+  encodeUrl: true
+}

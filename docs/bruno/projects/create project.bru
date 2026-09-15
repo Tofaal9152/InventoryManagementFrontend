@@ -1,0 +1,47 @@
+meta {
+  name: create project
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}projects/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    // Unique name (case-insensitive), max 255 characters. Required.
+    "name": "Line Follower Robot",
+
+    // Optional.
+    "description": "Competition robot for the 2026 season"
+  }
+}
+
+docs {
+  ## API explanation
+  Creates an ACTIVE project; `created_by` is the caller. Admin or Manager. Names are unique (case-insensitive). Audited.
+
+  ## API example response
+  {
+    "id": 1,
+    "name": "Line Follower Robot",
+    "description": "Competition robot for the 2026 season",
+    "status": "ACTIVE",
+    "status_display": "Active",
+    "created_by": {
+      "id": 2,
+      "username": "karim.hossain",
+      "email": "karim.hossain@example.com",
+      "role": "MANAGER"
+    },
+    "created_at": "2026-09-14T22:17:36.530828+06:00",
+    "updated_at": "2026-09-14T22:17:36.530835+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

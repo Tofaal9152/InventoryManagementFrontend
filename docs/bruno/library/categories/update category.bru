@@ -1,0 +1,42 @@
+meta {
+  name: update category
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}library/categories/:id/
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 4
+}
+
+body:json {
+  {
+    // Both optional on PATCH.
+    "description": "Parts without a better home"
+  }
+}
+
+docs {
+  ## API explanation
+  Edits a category's name or description. Admin or Manager. Audited.
+
+  ## API example response
+  {
+    "id": 4,
+    "name": "Miscellaneous",
+    "description": "Parts without a better home",
+    "component_count": 0,
+    "total_quantity": "0.000",
+    "created_at": "2026-09-14T22:17:36.322699+06:00",
+    "updated_at": "2026-09-14T22:17:36.326993+06:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

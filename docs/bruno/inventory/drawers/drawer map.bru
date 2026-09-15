@@ -1,0 +1,185 @@
+meta {
+  name: drawer map
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}inventory/drawer-map/?search=motor
+  body: none
+  auth: inherit
+}
+
+params:query {
+  search: motor
+}
+
+docs {
+  ## API explanation
+  The cabinet as a 2D grid (FR-7.5): `rows`, then `drawers`, then `chambers`.
+  Each chamber has a `state`:
+
+  - `EMPTY`: no component assigned (grey)
+  - `OCCUPIED`: component present, total above minimum (green)
+  - `LOW_STOCK`: component total at or below its minimum (amber)
+  - `OUT_OF_STOCK`: component assigned but this chamber holds 0 (red)
+
+  `search` highlights (`highlighted: true`) every chamber whose component
+  name or part number matches (FR-7.7). Any role.
+
+
+  ## API example response
+  {
+    "cabinet": {
+      "id": 1,
+      "name": "Main Cabinet",
+      "rows": 3,
+      "columns": 4
+    },
+    "summary": {
+      "total_chambers": 14,
+      "in_use": 4,
+      "empty": 10,
+      "occupied": 3,
+      "low_stock": 1,
+      "out_of_stock": 0,
+      "utilisation_percent": 28.6
+    },
+    "rows": [
+      {
+        "row": 1,
+        "drawers": [
+          {
+            "id": 1,
+            "code": "A1",
+            "row": 1,
+            "column": 1,
+            "chamber_count": 1,
+            "chambers": [
+              {
+                "id": 1,
+                "code": "A11",
+                "number": 1,
+                "state": "OCCUPIED",
+                "highlighted": true,
+                "stock_entry": {
+                  "id": 1,
+                  "quantity": "26.000",
+                  "component": {
+                    "id": 1,
+                    "name": "DC Gear Motor 12V",
+                    "part_number": "JGB37-520",
+                    "unit_symbol": "pcs",
+                    "minimum_quantity": "15.000",
+                    "total_quantity": "36.000"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "code": "B1",
+            "row": 1,
+            "column": 2,
+            "chamber_count": 1,
+            "chambers": [
+              {
+                "id": 2,
+                "code": "B11",
+                "number": 1,
+                "state": "EMPTY",
+                "highlighted": false,
+                "stock_entry": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "row": 2,
+        "drawers": [
+          {
+            "id": 5,
+            "code": "A2",
+            "row": 2,
+            "column": 1,
+            "chamber_count": 1,
+            "chambers": [
+              {
+                "id": 5,
+                "code": "A21",
+                "number": 1,
+                "state": "OCCUPIED",
+                "highlighted": false,
+                "stock_entry": {
+                  "id": 2,
+                  "quantity": "58.000",
+                  "component": {
+                    "id": 2,
+                    "name": "LM7805 Voltage Regulator",
+                    "part_number": "LM7805",
+                    "unit_symbol": "pcs",
+                    "minimum_quantity": "50.000",
+                    "total_quantity": "58.000"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "code": "B2",
+            "row": 2,
+            "column": 2,
+            "chamber_count": 3,
+            "chambers": [
+              {
+                "id": 6,
+                "code": "B21",
+                "number": 1,
+                "state": "LOW_STOCK",
+                "highlighted": false,
+                "stock_entry": {
+                  "id": 3,
+                  "quantity": "18.000",
+                  "component": {
+                    "id": 3,
+                    "name": "Hookup Wire 22AWG Red",
+                    "part_number": "UL1007-22-RED",
+                    "unit_symbol": "m",
+                    "minimum_quantity": "20.000",
+                    "total_quantity": "18.000"
+                  }
+                }
+              },
+              {
+                "id": 13,
+                "code": "B22",
+                "number": 2,
+                "state": "OCCUPIED",
+                "highlighted": true,
+                "stock_entry": {
+                  "id": 5,
+                  "quantity": "10.000",
+                  "component": {
+                    "id": 1,
+                    "name": "DC Gear Motor 12V",
+                    "part_number": "JGB37-520",
+                    "unit_symbol": "pcs",
+                    "minimum_quantity": "15.000",
+                    "total_quantity": "36.000"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

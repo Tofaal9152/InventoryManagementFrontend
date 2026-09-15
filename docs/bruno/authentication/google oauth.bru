@@ -1,0 +1,53 @@
+meta {
+  name: google oauth
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}rest-auth/google/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // ID token from Google Identity Services. Provide this OR "code".
+    "id_token": "PASTE_GOOGLE_ID_TOKEN_HERE"
+
+    // Alternative: an OAuth authorization code (redirect URI must match the Google client).
+    // "code": "PASTE_GOOGLE_AUTH_CODE_HERE"
+  }
+}
+
+docs {
+  ## API explanation
+  Signs in with Google (`administrator.auth_views.GoogleLogin`, a dj-rest-auth
+  `SocialLoginView`). Public. Needs the one-time Django admin setup described in
+  README.md ("Google sign-in"). Send either `id_token` (Google Identity
+  Services) or `code` (authorization code flow).
+
+  Unlike "login", this response has no `role`; call "get user" or read the
+  role from users/get user if the frontend needs it.
+
+  The example below is illustrative: this endpoint needs real Google
+  credentials, so it could not be captured from a live call.
+
+
+  ## API example response
+  {
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "pk": 5,
+      "username": "jane.doe",
+      "email": "jane.doe@gmail.com",
+      "first_name": "Jane",
+      "last_name": "Doe"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

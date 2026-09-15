@@ -1,0 +1,42 @@
+meta {
+  name: verify token
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}api/token/verify/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    // Any JWT to check. Required.
+    "token": "{{accessToken}}"
+  }
+}
+
+docs {
+  ## API explanation
+  Checks whether a JWT (access or refresh) is still valid, without issuing a
+  new one (simplejwt `TokenVerifyView`). Public. A valid token returns 200
+  with an empty object. `rest-auth/token/verify/` behaves the same.
+
+
+  ## API example response
+  {}
+
+  Invalid or expired token (401):
+  {
+    "success": false,
+    "message": "Token is invalid or expired"
+  }
+
+  ## Changelog
+  - 2026-09-14: Token errors now return just the error text in `message` (previously a second `(code) token_not_valid` line was appended).
+}
+
+settings {
+  encodeUrl: true
+}

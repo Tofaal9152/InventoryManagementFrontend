@@ -2,20 +2,41 @@
 
 ## Start Here
 
-Read these files before changing code:
+The frontend UI is built and deployed. The work in progress is wiring it to the Django backend.
 
-1. `documents/IMPLEMENTATION_PLAN.md` - the product plan, route map, technical structure and progress log.
-2. `documents/content/SRS-Components-Inventory-Management-System (1) (1).pdf` - formal requirements.
-3. `documents/demoimages/` - UI interaction reference only. Do not reproduce the supplied design.
+Read before changing code:
 
-The project has not started implementation. Always continue from the first unfinished step in the Progress Log of `documents/IMPLEMENTATION_PLAN.md`.
+1. `docs/API_INTEGRATION_PLAN.md` - **the current backlog**: 14 ordered steps, the UX acceptance
+   criteria every step must meet, the progress log, and the resume protocol for a cold session.
+2. `docs/bruno/` - the backend API spec, one file per endpoint with a real example response.
+   Read only the files for the step in hand; the collection is large.
+3. `docs/api-changes/` - dated changelogs of what the backend added, changed or removed.
+
+Refresh the spec with the `api-sync` skill (`node .claude/skills/api-sync/sync.mjs`); it mirrors
+the collection and writes a changelog. It never edits frontend code.
+
+## The Backend Is Read-Only
+
+`../backend/` belongs to another repo and another owner. Read its source, `docs/API.md` and
+Bruno collection; run its server. **Never edit, fix or commit anything inside it.** If something
+there is wrong, report it and let the user decide. Absorb API shape differences on this side with
+mappers, never by asking for a backend change.
+
+Run it locally with:
+
+```bash
+cd ../backend && source venv/bin/activate && cd server && python manage.py runserver   # :8000
+npm run dev                                                                            # :4173
+```
 
 ## User Workflow
 
-- Do **not** start a new implementation step until the user explicitly says `next step` or clearly asks for that named step.
-- Work on exactly one plan step at a time unless the user explicitly expands the scope.
-- At the end of a completed step, update `documents/IMPLEMENTATION_PLAN.md` Section 11 with completion date, exact changed files, verification, decisions and the recommended next step.
-- If a decision conflicts with the SRS or earlier instructions, state the conflict before making a product-changing assumption.
+- Do **not** start a new step until the user says `next` (or names the step).
+- Work on exactly one step at a time unless the user explicitly expands the scope.
+- At the end of a step, tick its box in `docs/API_INTEGRATION_PLAN.md` and append to the progress
+  log: date, step, files changed, verification performed, decisions taken.
+- If a decision conflicts with the SRS or earlier instructions, state the conflict before making
+  a product-changing assumption.
 
 ## Non-Negotiable Technical Rules
 

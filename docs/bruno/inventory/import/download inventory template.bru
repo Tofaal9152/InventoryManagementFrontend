@@ -1,0 +1,36 @@
+meta {
+  name: download inventory template
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}inventory/import/template/?export=csv
+  body: none
+  auth: inherit
+}
+
+params:query {
+  export: csv
+}
+
+docs {
+  ## API explanation
+  Downloads the inventory import template (FR-1.8) with one example row.
+  Admin or Manager. `export`: `xlsx` (default) | `csv`.
+
+  Columns: `location`*, `part_number`, `name`, `quantity`*, `note`. Each row needs
+  `part_number` or `name` to identify the component. (* required)
+
+
+  ## API example response
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="inventory-import-template.csv"
+
+  location,part_number,name,quantity,note
+  A11,LM7805,LM7805 Voltage Regulator,100,Initial count
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,45 @@
+meta {
+  name: close project
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}projects/:id/close/
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 2
+}
+
+docs {
+  ## API explanation
+  Closes a project: it can no longer be picked on new takes or requisitions (FR-8.3), but its history stays. Admin or Manager. Audited as `PROJECT_CLOSED`.
+
+  ## API example response
+  {
+    "success": true,
+    "message": "Project closed. It can no longer be selected on new operations.",
+    "data": {
+      "id": 2,
+      "name": "Solar Charge Controller",
+      "description": "",
+      "status": "CLOSED",
+      "status_display": "Closed",
+      "created_by": {
+        "id": 2,
+        "username": "karim.hossain",
+        "email": "karim.hossain@example.com",
+        "role": "MANAGER"
+      },
+      "created_at": "2026-09-14T22:17:36.536560+06:00",
+      "updated_at": "2026-09-14T22:17:37.031662+06:00"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

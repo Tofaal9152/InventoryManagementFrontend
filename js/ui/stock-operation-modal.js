@@ -61,13 +61,34 @@ function noteField(required) {
   `;
 }
 
+/**
+ * Destinations are chambers, because that is what stock moves between. A
+ * single-chamber drawer contributes one option, so the list reads the same as before.
+ */
+function destinationChoices(cabinet, drawer) {
+  return cabinet.drawers.flatMap((candidate) => {
+    const chambers = candidate.chambers?.length
+      ? candidate.chambers
+      : [{ id: candidate.id, code: candidate.code, component: candidate.component, quantity: candidate.quantity }];
+
+    return chambers.map((chamber) => ({
+      value: chamber.code && candidate.chambers?.length ? chamber.code : candidate.id,
+      locationCode: chamber.code || candidate.locationCode || '',
+      code: chamber.code || candidate.code,
+      component: chamber.component || null,
+      isSource: chamber.code
+        ? chamber.code === (drawer.locationCode || drawer.code)
+        : candidate.id === drawer.id
+    }));
+  }).filter((choice) => !choice.isSource);
+}
+
 function transferDestinationField(cabinet, drawer) {
-  const options = cabinet.drawers
-    .filter((candidate) => candidate.id !== drawer.id)
-    .map((candidate) => {
-      const unavailable = candidate.componentId && candidate.componentId !== drawer.componentId;
-      const descriptor = candidate.component ? ` · ${candidate.component.name}` : ' · Empty';
-      return `<option value="${candidate.id}" ${unavailable ? 'disabled' : ''}>${escapeHtml(candidate.code)}${escapeHtml(descriptor)}${unavailable ? ' (unavailable)' : ''}</option>`;
+  const options = destinationChoices(cabinet, drawer)
+    .map((choice) => {
+      const unavailable = choice.component && choice.component.id !== drawer.component?.id;
+      const descriptor = choice.component ? ` · ${choice.component.name}` : ' · Empty';
+      return `<option value="${escapeHtml(String(choice.value))}" data-location="${escapeHtml(choice.locationCode)}" ${unavailable ? 'disabled' : ''}>${escapeHtml(choice.code)}${escapeHtml(descriptor)}${unavailable ? ' (unavailable)' : ''}</option>`;
     }).join('');
 
   return `
@@ -159,9 +180,15 @@ export async function openStockOperationModal({ operation, cabinet, drawer }) {
 
     try {
       const formData = getFormPayload(form);
+      const destinationSelect = form.elements.destinationDrawerId;
+      const destinationLocationCode = destinationSelect?.selectedOptions?.[0]?.dataset.location || '';
       await performOperation(operation, {
         cabinetId: currentCabinet.id,
         drawerId: currentDrawer.id,
+        // Live stock endpoints address chambers by code; demo mode uses the ids above.
+        locationCode: drawer.locationCode || currentDrawer.locationCode || '',
+        componentId: drawer.component?.id || currentDrawer.component?.id || '',
+        destinationLocationCode,
         ...formData
       });
       modal.close('saved');

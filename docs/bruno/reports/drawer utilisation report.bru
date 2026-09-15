@@ -1,0 +1,80 @@
+meta {
+  name: drawer utilisation report
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}reports/drawer-utilisation/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~export: csv
+  ~p: 1
+  ~page_size: 25
+}
+
+docs {
+  ## API explanation
+  In-use against empty chambers per drawer, with each drawer's free location
+  codes. `summary` has the overall utilisation and the full list of free
+  location codes. Admin or Manager.
+
+  Like every report (FR-9.1): a paginated JSON table with `columns` (key and header)
+  and, where it applies, a `summary`. Add `?export=xlsx` or `?export=csv` to download
+  the whole report (every page) as a file; quantities are written with their unit symbol.
+
+  ## API example response
+  {
+    "count": 12,
+    "page_size": 25,
+    "next": null,
+    "previous": null,
+    "num_pages": 1,
+    "current_page": 1,
+    "results": [
+      {
+        "drawer": "A1",
+        "total_chambers": 1,
+        "in_use": 1,
+        "free_locations": [],
+        "empty": 0
+      },
+      {
+        "drawer": "B1",
+        "total_chambers": 1,
+        "in_use": 0,
+        "free_locations": [
+          "B11"
+        ],
+        "empty": 1
+      }
+    ],
+    "columns": [
+      {
+        "key": "drawer",
+        "header": "Drawer"
+      },
+      {
+        "key": "total_chambers",
+        "header": "Chambers"
+      }
+    ],
+    "summary": {
+      "total_chambers": 14,
+      "in_use": 7,
+      "empty": 7,
+      "utilisation_percent": 50.0,
+      "free_location_codes": [
+        "B11",
+        "C11"
+      ]
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}
