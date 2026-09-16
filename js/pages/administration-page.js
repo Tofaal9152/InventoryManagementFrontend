@@ -6,13 +6,14 @@ import { renderIcon } from '../ui/icons.js';
 import { APP_CONFIG } from '../config.js';
 import { canAdministerUsers, canConfigureCabinet, canManageLibrary } from '../services/permission-service.js';
 import { openUserModal } from '../ui/user-modal.js';
-import { sendPasswordReset, setUserActive } from '../services/user-service.js';
+import { setUserActive } from '../services/user-service.js';
 import { openImportModal } from '../ui/import-modal.js';
-import { downloadExport, labelSheetUrl } from '../services/file-service.js';
+import { downloadExport, openLabelSheet } from '../services/file-service.js';
 import { openCategoryModal, openCategoryReassignModal, openUnitModal } from '../ui/reference-modal.js';
 import { deleteCategory, deleteUnit } from '../services/reference-service.js';
 import { confirmAction } from '../ui/confirm-dialog.js';
 import { renderErrorState, renderLoadingState } from '../ui/async-state.js';
+import { getCurrentUser } from '../api/tokens.js';
 
 const sections = Object.freeze({
   '/settings/cabinets': { title: 'Cabinet settings', eyebrow: 'Administration', description: 'Change the 2D cabinet grid only when no assigned drawer would be removed.' },
@@ -40,6 +41,12 @@ function rowActions(editAttribute, deleteAttribute, id) {
       <button class="table-action" type="button" ${deleteAttribute}="${escapeHtml(id)}">${renderIcon('trash')}Delete</button>
     </td>
   `;
+}
+
+function isCurrentUser(user) {
+  const currentUser = getCurrentUser();
+  const currentUserId = String(currentUser?.id ?? currentUser?.pk ?? '');
+  return Boolean(currentUserId) && currentUserId === String(user?.id ?? '');
 }
 
 function renderCategoryTable(categories) {
@@ -89,14 +96,14 @@ function renderUsersTable(users, roles) {
     ${editable ? `<div class="page-actions"><button class="button" type="button" data-create-user>${renderIcon('plus')}New user</button></div>` : ''}
     <div class="library-table-wrap"><table class="library-table library-table--compact"><thead><tr><th>User</th><th>Role</th><th>Status</th>${editable ? '<th aria-label="Actions"></th>' : ''}</tr></thead><tbody>${users.map((user) => {
       const isActive = user.isActive ?? user.active;
+      const isSelf = isCurrentUser(user);
       return `<tr>
         <td><strong>${escapeHtml(user.name)}</strong><span class="table-secondary">${escapeHtml(user.email || '')}</span></td>
         <td>${escapeHtml(user.role)}</td>
         <td><span class="status-badge status-badge--${isActive ? 'success' : 'neutral'}">${isActive ? 'Active' : 'Deactivated'}</span></td>
         ${editable ? `<td class="table-actions">
-          <button class="table-action" type="button" data-edit-user="${escapeHtml(user.id)}">${renderIcon('edit')}Edit</button>
-          <button class="table-action" type="button" data-reset-password="${escapeHtml(user.id)}">${renderIcon('refresh')}Reset password</button>
-          <button class="table-action" type="button" data-toggle-user="${escapeHtml(user.id)}" data-active="${isActive}">${renderIcon(isActive ? 'close' : 'check')}${isActive ? 'Deactivate' : 'Reactivate'}</button>
+          <button class="table-action" type="button" data-edit-user="${escapeHtml(user.id)}">${renderIcon('edit')}${isSelf ? 'Edit profile' : 'Edit'}</button>
+          ${isSelf ? '<span class="table-secondary administration-current-user">Current account</span>' : `<button class="table-action" type="button" data-toggle-user="${escapeHtml(user.id)}" data-active="${isActive}">${renderIcon(isActive ? 'close' : 'check')}${isActive ? 'Deactivate' : 'Reactivate'}</button>`}
         </td>` : ''}
       </tr>`;
     }).join('')}</tbody></table></div>`;
@@ -131,7 +138,7 @@ function renderCabinetActions() {
       <h3>Drawer labels &amp; QR</h3>
       <p>A printable sheet of drawer labels with QR codes that open the chamber.</p>
       ${live
-        ? `<a class="button button--secondary" href="${labelSheetUrl()}" target="_blank" rel="noreferrer">${renderIcon('label')}Open label sheet${renderIcon('external-link')}</a>`
+        ? `<button class="button button--secondary" type="button" data-open-label-sheet>${renderIcon('label')}Open label sheet${renderIcon('external-link')}</button>`
         : `<button class="button button--secondary" type="button" data-admin-placeholder>${renderIcon('label')}Label placeholder</button>`}
     </article>
   </section>`;
@@ -167,6 +174,10 @@ function updateAuditLogResults(container, events) {
 
 /** Deactivating keeps the user's history; the backend never deletes a user. */
 async function handleToggleUser({ user, button, reload }) {
+  if (isCurrentUser(user)) {
+    showToast('You cannot deactivate your own account.', { type: 'error' });
+    return;
+  }
   const deactivating = button.dataset.active === 'true';
   const confirmed = await confirmAction({
     title: deactivating ? `Deactivate ${user.name || user.email}?` : `Reactivate ${user.name || user.email}?`,
@@ -186,26 +197,6 @@ async function handleToggleUser({ user, button, reload }) {
   } catch (error) {
     button.disabled = false;
     showToast(error?.message || 'The user could not be updated.', { type: 'error' });
-  }
-}
-
-async function handlePasswordReset({ user, button }) {
-  const confirmed = await confirmAction({
-    title: `Send a password reset to ${user.email}?`,
-    description: 'They receive an email with a link to set a new password. Their current password keeps working until they use it.',
-    confirmLabel: 'Send reset email',
-    tone: 'default'
-  });
-  if (!confirmed) return;
-
-  button.disabled = true;
-  try {
-    await sendPasswordReset(user.id);
-    showToast('Password reset email sent.');
-  } catch (error) {
-    showToast(error?.message || 'The reset email could not be sent.', { type: 'error' });
-  } finally {
-    button.disabled = false;
   }
 }
 
@@ -386,6 +377,21 @@ export async function renderAdministrationPage(container, route) {
       return;
     }
 
+    const labelSheetButton = event.target.closest('[data-open-label-sheet]');
+    if (labelSheetButton) {
+      labelSheetButton.disabled = true;
+      labelSheetButton.setAttribute('aria-busy', 'true');
+      try {
+        await openLabelSheet();
+      } catch (error) {
+        showToast(error?.message || 'The label sheet could not be opened.', { type: 'error' });
+      } finally {
+        labelSheetButton.disabled = false;
+        labelSheetButton.removeAttribute('aria-busy');
+      }
+      return;
+    }
+
     if (event.target.closest('[data-create-user]')) {
       openUserModal({ onSaved: reload });
       return;
@@ -394,7 +400,7 @@ export async function renderAdministrationPage(container, route) {
     const editUser = event.target.closest('[data-edit-user]');
     if (editUser) {
       const user = data.users.find((item) => item.id === editUser.dataset.editUser);
-      if (user) openUserModal({ user, onSaved: reload });
+      if (user) openUserModal({ user, isSelf: isCurrentUser(user), onSaved: reload });
       return;
     }
 
@@ -405,11 +411,6 @@ export async function renderAdministrationPage(container, route) {
       return;
     }
 
-    const resetPassword = event.target.closest('[data-reset-password]');
-    if (resetPassword) {
-      const user = data.users.find((item) => item.id === resetPassword.dataset.resetPassword);
-      if (user) await handlePasswordReset({ user, button: resetPassword });
-    }
   }, { signal: administrationController.signal });
 }
 

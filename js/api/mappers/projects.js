@@ -54,8 +54,24 @@ export function mapProjectDetails(dto) {
     requisitions: (dto?.requisitions || []).map((item) => ({
       id: toId(item.id),
       reference: item.reference || '',
+      component: {
+        id: toId(item.component?.id),
+        name: item.component?.name || item.part_name || item.requested_part_name || 'Requested part',
+        partNumber: item.component?.part_number || '',
+        unit: { symbol: item.component?.unit_symbol || item.unit?.symbol || '' }
+      },
+      partName: item.part_name || item.requested_part_name || '',
       status: item.status_display || item.status || '',
-      quantity: toNumber(item.quantity)
+      quantity: toNumber(item.quantity),
+      neededBy: item.needed_by || '',
+      reason: item.reason || '',
+      requestedBy: {
+        id: toId(item.requested_by?.id),
+        name: item.requested_by?.username || '',
+        email: item.requested_by?.email || ''
+      },
+      createdOn: item.created_at || '',
+      statusChangedAt: item.status_changed_at || ''
     })),
     movements: []
   };

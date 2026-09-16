@@ -3,6 +3,7 @@ import {
   getComponentDetails,
   getComponentReferenceData,
   listComponents,
+  deleteComponent,
   setComponentArchived
 } from '../services/component-service.js';
 import { openComponentModal } from '../ui/component-modal.js';
@@ -56,6 +57,7 @@ function renderLibraryRows(components) {
       <td class="table-actions">
         <a class="table-action" href="/library/${component.id}" data-route-link>${renderIcon('view')}View details</a>
         ${canManageLibrary() ? `<button class="table-action" type="button" data-edit-component-id="${component.id}">${renderIcon('edit')}Edit</button>` : ''}
+        ${canManageLibrary() && APP_CONFIG.mode !== 'demo' ? `<button class="table-action table-action--danger" type="button" data-delete-component-id="${component.id}">${renderIcon('trash')}Delete</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -75,7 +77,7 @@ function renderPagination(totalItems) {
   `;
 }
 
-function bindLibraryEvents(container, totalItems, signal) {
+function bindLibraryEvents(container, components, signal) {
   container.addEventListener('input', (event) => {
     if (event.target.matches('[data-library-search]')) {
       window.clearTimeout(searchTimeout);
@@ -109,6 +111,13 @@ function bindLibraryEvents(container, totalItems, signal) {
       return;
     }
 
+    const deleteButton = event.target.closest('[data-delete-component-id]');
+    if (deleteButton) {
+      const component = components.find((item) => String(item.id) === deleteButton.dataset.deleteComponentId);
+      if (component) await handleComponentDelete({ container, component, button: deleteButton, onDeleted: () => renderLibraryPage(container) });
+      return;
+    }
+
     const exportButton = event.target.closest('[data-export-components]');
     if (exportButton) {
       exportButton.disabled = true;
@@ -136,7 +145,7 @@ function bindLibraryEvents(container, totalItems, signal) {
 
     const pageButton = event.target.closest('[data-library-page]');
     if (pageButton) {
-      const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
+      const pageCount = Math.max(1, Math.ceil(components.length / pageSize));
       const offset = pageButton.dataset.libraryPage === 'next' ? 1 : -1;
       libraryState = { ...libraryState, page: Math.max(1, Math.min(pageCount, libraryState.page + offset)) };
       await renderLibraryPage(container);
@@ -192,15 +201,17 @@ export async function renderLibraryPage(container) {
             <option value="out" ${libraryState.stockStatus === 'out' ? 'selected' : ''}>Out of stock</option>
           </select>
         </section>
-        ${canManageLibrary() && APP_CONFIG.mode !== 'demo'
-          ? `<button class="button button--secondary" type="button" data-export-components>${renderIcon('export')}Export</button>`
-          : ''}
-        ${canManageLibrary() ? `<button class="button" type="button" data-create-component>${renderIcon('plus')}New component</button>` : ''}
+        <div class="library-toolbar__actions">
+          ${canManageLibrary() && APP_CONFIG.mode !== 'demo'
+            ? `<button class="button button--secondary" type="button" data-export-components>${renderIcon('export')}Export</button>`
+            : ''}
+          ${canManageLibrary() ? `<button class="button" type="button" data-create-component>${renderIcon('plus')}New component</button>` : ''}
+        </div>
       </section>
       ${visibleComponents.length ? `
         <div class="library-table-wrap">
           <table class="library-table">
-            <thead><tr><th>Image</th><th>Component</th><th>Part number</th><th>Category</th><th>Unit</th><th>Total stock</th><th>Last price</th><th>Delivery</th><th>Locations</th><th>Updated</th><th aria-label="Actions"></th></tr></thead>
+            <thead><tr><th>Image</th><th>Component</th><th>Part number</th><th>Category</th><th>Unit</th><th>Total stock</th><th>Last price</th><th>Delivery</th><th>Locations</th><th>Updated</th><th>Actions</th></tr></thead>
             <tbody>${renderLibraryRows(visibleComponents)}</tbody>
           </table>
         </div>
@@ -210,7 +221,29 @@ export async function renderLibraryPage(container) {
   `;
 
   libraryEventController = new AbortController();
-  bindLibraryEvents(container, components.length, libraryEventController.signal);
+  bindLibraryEvents(container, components, libraryEventController.signal);
+}
+
+async function handleComponentDelete({ container, component, button, onDeleted }) {
+  const confirmed = await confirmAction({
+    title: `Delete ${component.name}?`,
+    description: 'This permanently removes the component only if it has never had stock or a movement record. If it has been used, archive it instead so the inventory history remains accurate.',
+    confirmLabel: 'Delete component',
+    tone: 'danger'
+  });
+  if (!confirmed) return;
+
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  try {
+    await deleteComponent(component.id);
+    showToast('Component deleted.');
+    await onDeleted();
+  } catch (error) {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    showToast(error?.message || 'This component cannot be deleted. Archive it instead.', { type: 'error' });
+  }
 }
 
 async function handleArchive(container, componentId, component, button) {
@@ -287,6 +320,9 @@ export async function renderComponentDetailsPage(container, componentId) {
                  ${renderIcon(component.isArchived ? 'refresh' : 'trash')}${component.isArchived ? 'Restore component' : 'Archive component'}
                </button>`
             : ''}
+          ${canManageLibrary() && APP_CONFIG.mode !== 'demo'
+            ? `<button class="button button--danger" type="button" data-delete-detail-component="${component.id}">${renderIcon('trash')}Delete permanently</button>`
+            : ''}
         </div>
       </div>
       <div class="component-detail-workspace">
@@ -341,6 +377,12 @@ export async function renderComponentDetailsPage(container, componentId) {
 
   componentDetailsEventController = new AbortController();
   container.addEventListener('click', async (event) => {
+    const deleteButton = event.target.closest('[data-delete-detail-component]');
+    if (deleteButton) {
+      await handleComponentDelete({ container, component, button: deleteButton, onDeleted: () => renderLibraryPage(container) });
+      return;
+    }
+
     const archiveButton = event.target.closest('[data-archive-component]');
     if (archiveButton) {
       await handleArchive(container, componentId, component, archiveButton);

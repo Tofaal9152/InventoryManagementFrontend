@@ -41,7 +41,7 @@ export async function getAdministrationData() {
     ]);
 
     return {
-      categories: categories.map((category) => ({ ...category, totalQuantity: 0 })),
+      categories,
       units,
       // One cabinet, shaped as a list so the settings page keeps iterating.
       cabinets: cabinet

@@ -299,7 +299,7 @@ export async function receiveRequisition({ requisitionId, locationCode, quantity
 
   try {
     const payload = await apiRequest(`requisitions/${encodeURIComponent(requisitionId)}/receive/`, { method: 'POST', body });
-    return mapRequisition(payload?.data || payload);
+    return mapRequisition(payload?.data?.requisition || payload?.data || payload);
   } catch (error) {
     if (error?.name === 'ApiRequestError' && error.isValidationError) {
       const fields = error.fields || {};

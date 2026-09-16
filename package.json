@@ -4,8 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
-    "test": "INVENTORY_MODE=demo node tests/demo-workflow.mjs"
+    "start": "node server.js"
   }
 }

@@ -1,7 +1,7 @@
 import { RequisitionValidationError, receiveRequisition } from '../services/requisition-service.js';
 import { getInventoryWorkspace } from '../services/inventory-service.js';
 import { getComponentReferenceData } from '../services/component-service.js';
-import { clearFormErrors, setFieldError } from './form-fields.js';
+import { clearFieldErrorOnChange, clearFormErrors, setFieldError } from './form-fields.js';
 import { confirmAction } from './confirm-dialog.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -26,36 +26,43 @@ export async function openReceiveRequisitionModal({ requisition, onReceived } = 
   ]);
 
   const form = document.createElement('form');
-  form.className = 'library-form-grid';
+  form.className = 'receive-requisition-form';
   form.noValidate = true;
   form.innerHTML = `
+    <div class="requisition-receipt-summary">
+      <strong>${escapeHtml(requisition.partName)}</strong>
+      <span>${escapeHtml(requisition.reference)} · ${formatQuantity(requisition.quantity, requisition.unit?.symbol)} requested</span>
+    </div>
+    <div class="requisition-form-grid">
     <div class="field field--wide">
-      <label class="field__label" for="receive-location">Chamber</label>
+      <label class="field__label" for="receive-location">Destination chamber <span class="requisition-form__required" aria-hidden="true">*</span></label>
       <select class="field__control" id="receive-location" name="locationCode" aria-describedby="receive-location-error" required>
         <option value="">Choose a chamber</option>
         ${chamberOptions(workspace, requisition)}
       </select>
+      <span class="field__hint">Only empty chambers or chambers holding this same component are available.</span>
       <span class="field__error" id="receive-location-error"></span>
     </div>
     <div class="field">
-      <label class="field__label" for="receive-quantity">Delivered quantity (${escapeHtml(requisition.unit?.symbol || '')})</label>
+      <label class="field__label" for="receive-quantity">Delivered quantity (${escapeHtml(requisition.unit?.symbol || '')}) <span class="requisition-form__required" aria-hidden="true">*</span></label>
       <input class="field__control" id="receive-quantity" name="quantity" type="number" min="0.001" step="0.001"
-             value="${requisition.quantity}" aria-describedby="receive-quantity-error" required>
+             inputmode="decimal" value="${requisition.quantity}" aria-describedby="receive-quantity-error" required>
+      <span class="field__hint">Change this if the delivered amount differs from the request.</span>
       <span class="field__error" id="receive-quantity-error"></span>
     </div>
     <div class="field">
       <label class="field__label" for="receive-price">Unit price (BDT) <span aria-hidden="true">(optional)</span></label>
-      <input class="field__control" id="receive-price" name="unitPrice" type="number" min="0" step="0.01" aria-describedby="receive-price-error">
+      <input class="field__control" id="receive-price" name="unitPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-describedby="receive-price-error">
       <span class="field__error" id="receive-price-error"></span>
     </div>
     <div class="field">
       <label class="field__label" for="receive-delivery">Delivery charge (BDT) <span aria-hidden="true">(optional)</span></label>
-      <input class="field__control" id="receive-delivery" name="deliveryCharge" type="number" min="0" step="0.01" aria-describedby="receive-delivery-error">
+      <input class="field__control" id="receive-delivery" name="deliveryCharge" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-describedby="receive-delivery-error">
       <span class="field__error" id="receive-delivery-error"></span>
     </div>
     ${needsCategory ? `
       <div class="field">
-        <label class="field__label" for="receive-category">Category for the new component</label>
+        <label class="field__label" for="receive-category">Category for the new component <span class="requisition-form__required" aria-hidden="true">*</span></label>
         <select class="field__control" id="receive-category" name="categoryId" aria-describedby="receive-category-error" required>
           <option value="">Choose a category</option>
           ${references.categories.map((category) => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`).join('')}
@@ -68,9 +75,11 @@ export async function openReceiveRequisitionModal({ requisition, onReceived } = 
       <input class="field__control" id="receive-note" name="note" type="text" placeholder="Invoice number, supplier…" aria-describedby="receive-note-error">
       <span class="field__error" id="receive-note-error"></span>
     </div>
+    </div>
+    <p class="requisition-receipt-warning">Receiving adds stock immediately and marks this requisition as received.</p>
     <div class="dialog__actions">
       <button class="button button--secondary" type="button" data-receive-cancel>${renderIcon('close')}Cancel</button>
-      <button class="button" type="submit">${renderIcon('import')}Receive stock</button>
+      <button class="button" type="submit">${renderIcon('import')}<span data-receive-submit-label>Receive stock</span></button>
     </div>
   `;
 
@@ -83,12 +92,14 @@ export async function openReceiveRequisitionModal({ requisition, onReceived } = 
   });
 
   form.querySelector('[data-receive-cancel]').addEventListener('click', () => modal.close('cancelled'));
+  clearFieldErrorOnChange(form);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const submitButton = form.querySelector('[type="submit"]');
     if (submitButton.disabled) return;
     clearFormErrors(form);
+    const submitLabel = form.querySelector('[data-receive-submit-label]');
 
     const values = Object.fromEntries(new FormData(form));
     const confirmed = await confirmAction({
@@ -101,6 +112,7 @@ export async function openReceiveRequisitionModal({ requisition, onReceived } = 
 
     submitButton.disabled = true;
     submitButton.setAttribute('aria-busy', 'true');
+    if (submitLabel) submitLabel.textContent = 'Receiving…';
 
     try {
       await receiveRequisition({ requisitionId: requisition.id, ...values });
@@ -120,6 +132,7 @@ export async function openReceiveRequisitionModal({ requisition, onReceived } = 
       }
       submitButton.disabled = false;
       submitButton.removeAttribute('aria-busy');
+      if (submitLabel) submitLabel.textContent = 'Receive stock';
     }
   });
 }

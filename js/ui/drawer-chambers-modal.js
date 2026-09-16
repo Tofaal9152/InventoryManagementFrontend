@@ -1,5 +1,5 @@
 import { CabinetValidationError, updateDrawerChambers } from '../services/inventory-service.js';
-import { clearFormErrors, setFieldError } from './form-fields.js';
+import { clearFieldErrorOnChange, clearFormErrors, setFieldError } from './form-fields.js';
 import { confirmAction } from './confirm-dialog.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -21,9 +21,11 @@ export function openDrawerChambersModal({ drawer, onSaved } = {}) {
     <div class="field">
       <label class="field__label" for="drawer-chambers">Chambers in ${escapeHtml(drawer.code)}</label>
       <input class="field__control" id="drawer-chambers" name="chamberCount" type="number" min="1" max="9" step="1"
-             value="${current}" aria-describedby="drawer-chambers-error" required>
+             inputmode="numeric" value="${current}" aria-describedby="drawer-chambers-error" required>
+      <span class="field__hint">Choose 1 to 9 separate storage sections.</span>
       <span class="field__error" id="drawer-chambers-error"></span>
     </div>
+    <div class="inventory-form__preview" data-chamber-preview aria-live="polite"></div>
     <p class="cabinet-create-form__hint">
       Chamber codes follow the drawer, such as ${escapeHtml(drawer.code)}1 and ${escapeHtml(drawer.code)}2.
       Stock is held per chamber, so each one can hold a different component.
@@ -41,6 +43,24 @@ export function openDrawerChambersModal({ drawer, onSaved } = {}) {
   });
 
   form.querySelector('[data-chambers-cancel]').addEventListener('click', () => modal.close('cancelled'));
+  clearFieldErrorOnChange(form);
+  const chamberPreview = form.querySelector('[data-chamber-preview]');
+  const updateChamberPreview = () => {
+    const next = Number(form.elements.chamberCount.value);
+    if (!Number.isInteger(next) || next < 1 || next > 9) {
+      chamberPreview.textContent = 'Enter a whole number from 1 to 9.';
+      return;
+    }
+    if (next === current) {
+      chamberPreview.textContent = `No change: ${drawer.code} will keep ${current} chamber${current === 1 ? '' : 's'}.`;
+      return;
+    }
+    chamberPreview.textContent = next > current
+      ? `${next - current} empty chamber${next - current === 1 ? '' : 's'} will be added.`
+      : `${current - next} chamber${current - next === 1 ? '' : 's'} will be removed only if empty.`;
+  };
+  form.elements.chamberCount.addEventListener('input', updateChamberPreview);
+  updateChamberPreview();
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

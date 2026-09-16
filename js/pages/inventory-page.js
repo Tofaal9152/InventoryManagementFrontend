@@ -22,12 +22,31 @@ const filterDefinitions = [
   { id: 'out', label: 'Out of stock' }
 ];
 
+const DRAWER_VIEW_STORAGE_KEY = 'inventory.drawerView';
+
+function getSavedDrawerView() {
+  try {
+    const view = window.localStorage.getItem(DRAWER_VIEW_STORAGE_KEY);
+    return view === 'table' ? 'table' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function saveDrawerView(view) {
+  try {
+    window.localStorage.setItem(DRAWER_VIEW_STORAGE_KEY, view);
+  } catch {
+    // Storage can be unavailable in private browsing; keep the current view in memory.
+  }
+}
+
 let workspace;
 let selectedCabinetId;
 let selectedDrawerId;
 let selectedChamberId;
 let activeFilter = 'all';
-let drawerViewMode = 'grid';
+let drawerViewMode = getSavedDrawerView();
 let isDrawerPanelOpen = false;
 let unsubscribeFromInventory;
 let inventoryEventController;
@@ -46,29 +65,6 @@ function getDrawerCounts(cabinet) {
     counts[drawer.stockState] += 1;
     return counts;
   }, { all: 0, empty: 0, low: 0, out: 0, stocked: 0 });
-}
-
-function renderCabinetBrowser() {
-  return workspace.groups.map((group) => `
-    <section class="cabinet-group">
-      <div class="cabinet-group__header">
-        <div>
-          <p class="cabinet-group__name">${escapeHtml(group.name)}</p>
-          <span>${group.cabinets.length} cabinet${group.cabinets.length === 1 ? '' : 's'}</span>
-        </div>
-      </div>
-      <div class="cabinet-list">
-        ${group.cabinets.map((cabinet) => `
-          <button class="cabinet-list__item ${cabinet.id === selectedCabinetId ? 'is-selected' : ''}" type="button" data-cabinet-id="${cabinet.id}" aria-pressed="${cabinet.id === selectedCabinetId}">
-            <span>
-              <strong>${escapeHtml(cabinet.name)}</strong>
-              <small>${cabinet.drawerCount} drawers</small>
-            </span>
-          </button>
-        `).join('')}
-      </div>
-    </section>
-  `).join('');
 }
 
 function renderFilterButtons(cabinet) {
@@ -105,12 +101,12 @@ function renderDrawerCell(drawer) {
     `Component: ${componentName}`,
     componentDetail,
     `Quantity: ${quantity}`,
-    `Sections: ${drawer.sectionCount}`,
+    `Chambers: ${drawer.chamberCount}`,
     drawer.note ? `Note: ${drawer.note}` : ''
   ].filter(Boolean).join('\n');
 
   return `
-    <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${escapeHtml(tooltip.replaceAll('\n', ', '))}" title="${escapeHtml(tooltip)}">
+    <button class="drawer-cell drawer-cell--${drawer.stockState} ${isSelected ? 'is-selected' : ''}" type="button" data-drawer-id="${drawer.id}" aria-pressed="${isSelected}" aria-label="${escapeHtml(tooltip.replaceAll('\n', ', '))}">
       <span class="drawer-cell__front">
         <span class="drawer-cell__info">
           <span class="drawer-cell__identity">
@@ -144,18 +140,33 @@ function getVisibleDrawers(cabinet) {
 
 function renderDrawerTable(cabinet) {
   const drawers = getVisibleDrawers(cabinet);
-  const rows = drawers.length ? drawers.map((drawer) => `
-    <tr class="${drawer.id === selectedDrawerId ? 'is-selected' : ''}">
+  const rows = drawers.length ? drawers.map((drawer) => {
+    const occupiedChambers = drawer.chambers.filter((chamber) => chamber.component);
+    const componentSummary = drawer.isMultiChamber
+      ? `${occupiedChambers.length} of ${drawer.chamberCount} chambers occupied`
+      : drawer.component?.name || 'Available drawer';
+    const componentDetail = drawer.isMultiChamber
+      ? (occupiedChambers.length
+        ? occupiedChambers.map((chamber) => `${escapeHtml(chamber.code)} · ${escapeHtml(chamber.component.name)}`).join(' &nbsp;•&nbsp; ')
+        : 'No components assigned')
+      : drawer.component?.partNumber || 'No component assigned';
+    const quantity = drawer.isMultiChamber
+      ? `${occupiedChambers.length} occupied`
+      : drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : '—';
+
+    return `
+    <tr class="${drawer.id === selectedDrawerId ? 'is-selected' : ''}" data-drawer-id="${drawer.id}">
       <td><button class="drawer-table__code" type="button" data-drawer-id="${drawer.id}" aria-pressed="${drawer.id === selectedDrawerId}">${drawer.code}</button></td>
-      <td><strong>${drawer.component ? escapeHtml(drawer.component.name) : 'Available drawer'}</strong><span class="table-secondary">${drawer.component ? escapeHtml(drawer.component.partNumber || 'No part number') : 'No component assigned'}</span></td>
-      <td>${drawer.component ? formatQuantity(drawer.quantity, drawer.unit.symbol) : '—'}</td>
+      <td><strong>${escapeHtml(componentSummary)}</strong><span class="table-secondary drawer-table__component-detail">${componentDetail}</span></td>
+      <td>${quantity}</td>
       <td><span class="status-badge status-badge--${drawerStatusClass(drawer)}">${renderStatusIcon(drawerStatusClass(drawer))}${drawer.stockLabel}</span></td>
-      <td>${drawer.sectionCount}</td>
+      <td>${drawer.chamberCount}</td>
       <td>${escapeHtml(drawer.note || '—')}</td>
     </tr>
-  `).join('') : '<tr><td colspan="6">No drawers match this filter.</td></tr>';
+  `;
+  }).join('') : '<tr><td colspan="6">No drawers match this filter.</td></tr>';
 
-  return `<div class="drawer-table-wrap"><table class="drawer-table"><thead><tr><th>Drawer</th><th>Component</th><th>Quantity</th><th>State</th><th>Sections</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="drawer-table-wrap"><table class="drawer-table"><thead><tr><th>Drawer</th><th>Component</th><th>Quantity</th><th>State</th><th>Chambers</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function renderDrawerView(cabinet) {
@@ -177,6 +188,9 @@ function renderViewToggle() {
 function chamberTarget(drawer, chamber) {
   return {
     ...drawer,
+    // This is a chamber-level detail view. Chambers cannot be subdivided;
+    // only their parent drawer owns the chamber count.
+    isChamber: true,
     isMultiChamber: false,
     code: chamber.code,
     locationCode: chamber.code,
@@ -292,16 +306,22 @@ function renderDrawerDetails(drawer, cabinet) {
           <button class="button button--secondary drawer-panel__close" type="button" data-close-drawer-panel>${renderIcon('close')}Close</button>
         </div>
       </div>
-      <div class="drawer-panel__empty">
-        <h3>This drawer is available.</h3>
-        <p>${escapeHtml(cabinet.name)} · ${drawer.code} has no component assigned.</p>
-        ${canConfigureCabinet() && APP_CONFIG.mode !== 'demo'
-          ? `<button class="button button--secondary" type="button" data-edit-chambers>${renderIcon('edit')}Subdivide into chambers</button>`
-          : ''}
-        ${canManageStock()
-          ? `<button class="button" type="button" data-assign-drawer-id="${drawer.id}">${renderIcon('assign')}Assign from Library</button>`
-          : `<p class="drawer-panel__note">${readOnlyNotice('an empty drawer')}</p>`}
-      </div>
+      <section class="drawer-empty-state" aria-label="Available drawer ${escapeHtml(drawer.code)}">
+        <div class="drawer-empty-state__intro">
+          <span class="drawer-empty-state__icon">${renderIcon('drawer')}</span>
+          <div>
+            <p class="eyebrow">Available storage</p>
+            <h3>Ready for a component</h3>
+            <p>${escapeHtml(cabinet.name)} · ${drawer.code} has no component assigned yet.</p>
+          </div>
+        </div>
+        ${canManageStock() || (!drawer.isChamber && canConfigureCabinet() && APP_CONFIG.mode !== 'demo') ? `<div class="drawer-empty-state__actions">
+          ${canManageStock() ? `<button class="button" type="button" data-assign-drawer-id="${drawer.id}">${renderIcon('assign')}Assign from Library</button>` : ''}
+          ${!drawer.isChamber && canConfigureCabinet() && APP_CONFIG.mode !== 'demo'
+            ? `<button class="button button--secondary" type="button" data-edit-chambers>${renderIcon('edit')}Add chambers</button>`
+            : ''}
+        </div>` : `<p class="drawer-empty-state__notice">${readOnlyNotice('this empty drawer')}</p>`}
+      </section>
     `;
   }
 
@@ -341,8 +361,8 @@ function renderDrawerDetails(drawer, cabinet) {
         <dd>${escapeHtml(cabinet.name)} · ${drawer.code}</dd>
       </div>
       <div>
-        <dt>Sections</dt>
-        <dd>${drawer.sectionCount}</dd>
+        <dt>Chambers</dt>
+        <dd>${drawer.chamberCount}</dd>
       </div>
       <div>
         <dt>Minimum stock</dt>
@@ -362,6 +382,9 @@ function renderDrawerDetails(drawer, cabinet) {
         ? `<button class="button button--danger" type="button" data-remove-stock-entry="${drawer.stockEntryId}">${renderIcon('trash')}Free chamber</button>`
         : ''}
     </div>
+    ${!drawer.isChamber && canConfigureCabinet() && APP_CONFIG.mode !== 'demo'
+      ? `<button class="button button--secondary" type="button" data-edit-chambers>${renderIcon('edit')}Add chambers</button>`
+      : ''}
     <section class="drawer-movements" aria-labelledby="drawer-movements-title">
       <h3 id="drawer-movements-title">Recent activity</h3>
       <ul>${movementItems}</ul>
@@ -423,7 +446,6 @@ function updateCabinetWorkspace(container) {
     selectedDrawerId = firstVisibleDrawer?.id || cabinet.drawers[0].id;
   }
 
-  container.querySelector('.cabinet-browser__content').innerHTML = renderCabinetBrowser();
   container.querySelector('.inventory-heading__title').textContent = cabinet.name;
   container.querySelector('.inventory-heading__meta').textContent = `${cabinet.drawerCount} drawers · ${cabinet.rows} rows · ${cabinet.columns.length} columns`;
   container.querySelector('.inventory-filters').innerHTML = renderFilterButtons(cabinet);
@@ -476,7 +498,8 @@ function bindInventoryEvents(container) {
       return;
     }
     if (viewButton) {
-      drawerViewMode = viewButton.dataset.drawerView;
+      drawerViewMode = viewButton.dataset.drawerView === 'table' ? 'table' : 'grid';
+      saveDrawerView(drawerViewMode);
       updateCabinetWorkspace(container);
       return;
     }
@@ -491,7 +514,10 @@ function bindInventoryEvents(container) {
       await openCreateCabinetModal({
         onCreated: async (cabinet) => {
           selectedCabinetId = cabinet.id;
-          selectedDrawerId = cabinet.drawers[0]?.id;
+          // The save response is cabinet configuration only; the following
+          // drawer-map reload supplies the new drawers and selects its first.
+          selectedDrawerId = undefined;
+          selectedChamberId = undefined;
           activeFilter = 'all';
           await renderInventoryPage(container, { preserveSelection: true });
         }
@@ -507,7 +533,11 @@ function bindInventoryEvents(container) {
       const drawer = target?.id === assignButton.dataset.assignDrawerId
         ? target
         : getSelectedCabinet().drawers.find((item) => item.id === assignButton.dataset.assignDrawerId);
-      openAssignmentModal({ cabinet: getSelectedCabinet(), drawer });
+      openAssignmentModal({
+        cabinet: getSelectedCabinet(),
+        drawer,
+        onAssigned: () => renderInventoryPage(container, { preserveSelection: true })
+      });
       return;
     }
     const chambersButton = event.target.closest('[data-edit-chambers]');
@@ -539,7 +569,8 @@ function bindInventoryEvents(container) {
       openStockOperationModal({
         operation: operationButton.dataset.stockOperation,
         cabinet: getSelectedCabinet(),
-        drawer: getStockTarget()
+        drawer: getStockTarget(),
+        onCompleted: () => renderInventoryPage(container, { preserveSelection: true })
       });
     }
   }, { signal: inventoryEventController.signal });
@@ -594,22 +625,19 @@ export async function renderInventoryPage(container, { preserveSelection = false
 
   container.innerHTML = `
     <section class="inventory-workspace" aria-label="Cabinet inventory workspace">
-      <aside class="cabinet-browser">
-        <div class="cabinet-browser__title">
-          <div class="cabinet-browser__actions">
-            ${canConfigureCabinet() ? `<button class="button button--secondary" type="button" data-create-cabinet>${renderIcon('cabinet')}${APP_CONFIG.mode === 'demo' ? 'New cabinet' : 'Cabinet layout'}</button>` : ''}
-            ${canManageLibrary() ? `<button class="button button--secondary" type="button" data-create-library-component>${renderIcon('component')}New Library component</button>` : ''}
-          </div>
-        </div>
-        <div class="cabinet-browser__content"></div>
-      </aside>
       <section class="cabinet-stage" aria-labelledby="inventory-cabinet-title">
         <header class="inventory-heading">
           <div class="inventory-heading__summary">
             <h2 id="inventory-cabinet-title" class="inventory-heading__title"></h2>
             <p class="inventory-heading__meta"></p>
           </div>
-          <div class="drawer-view-toggle-container"></div>
+          <div class="inventory-heading__controls">
+            <div class="inventory-heading__actions">
+              ${canConfigureCabinet() ? `<button class="button button--secondary" type="button" data-create-cabinet>${renderIcon('cabinet')}${APP_CONFIG.mode === 'demo' ? 'New cabinet' : 'Cabinet layout'}</button>` : ''}
+              ${canManageLibrary() ? `<button class="button button--secondary" type="button" data-create-library-component>${renderIcon('component')}New Library component</button>` : ''}
+            </div>
+            <div class="drawer-view-toggle-container"></div>
+          </div>
           <div class="inventory-filters" aria-label="Drawer filters"></div>
         </header>
         <div class="drawer-view"></div>
@@ -638,6 +666,6 @@ export function destroyInventoryPage() {
   selectedDrawerId = undefined;
   selectedChamberId = undefined;
   activeFilter = 'all';
-  drawerViewMode = 'grid';
+  drawerViewMode = getSavedDrawerView();
   isDrawerPanelOpen = false;
 }

@@ -7,7 +7,7 @@ import {
   takeStock,
   transferStock
 } from '../services/inventory-service.js';
-import { setFieldError } from './form-fields.js';
+import { clearFieldErrorOnChange, clearFormErrors, setFieldError } from './form-fields.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
 import { escapeHtml } from '../utils/dom.js';
@@ -44,8 +44,8 @@ function field(label, name, { type = 'text', value = '', min = '', step = '', re
 
   return `
     <div class="field${wide ? ' field--wide' : ''}">
-      <label class="field__label" for="${controlId}">${label}${required ? '' : ' (optional)'}</label>
-      <input class="field__control" ${attributes}>
+      <label class="field__label" for="${controlId}">${label}${required ? ' <span class="inventory-form__required" aria-hidden="true">*</span>' : ' (optional)'}</label>
+      <input class="field__control" ${attributes} ${type === 'number' ? 'inputmode="decimal"' : ''}>
       <span class="field__error" id="${controlId}-error"></span>
     </div>
   `;
@@ -98,6 +98,7 @@ function transferDestinationField(cabinet, drawer) {
         <option value="">Choose a drawer</option>
         ${options}
       </select>
+      <span class="field__hint">Only empty locations or ones holding the same component can receive this transfer.</span>
       <span class="field__error" id="stock-operation-destinationDrawerId-error"></span>
     </div>
   `;
@@ -143,7 +144,7 @@ async function performOperation(operation, payload) {
   return transferStock(payload);
 }
 
-export async function openStockOperationModal({ operation, cabinet, drawer }) {
+export async function openStockOperationModal({ operation, cabinet, drawer, onCompleted } = {}) {
   const [projects, workspace] = await Promise.all([listProjects({ activeOnly: true }), getInventoryWorkspace()]);
   const currentCabinet = workspace.cabinets.find((item) => item.id === cabinet.id) || cabinet;
   const currentDrawer = currentCabinet.drawers.find((item) => item.id === drawer.id) || drawer;
@@ -171,12 +172,12 @@ export async function openStockOperationModal({ operation, cabinet, drawer }) {
   });
 
   form.querySelector('[data-stock-operation-cancel]').addEventListener('click', () => modal.close('cancelled'));
+  clearFieldErrorOnChange(form);
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const submitButton = form.querySelector('[type="submit"]');
     submitButton.disabled = true;
-    form.querySelectorAll('.field__error').forEach((element) => { element.textContent = ''; });
-    form.querySelectorAll('[aria-invalid="true"]').forEach((control) => control.setAttribute('aria-invalid', 'false'));
+    clearFormErrors(form);
 
     try {
       const formData = getFormPayload(form);
@@ -193,6 +194,7 @@ export async function openStockOperationModal({ operation, cabinet, drawer }) {
       });
       modal.close('saved');
       showToast(`${operationLabels[operation]} completed.`);
+      await onCompleted?.();
     } catch (error) {
       if (error instanceof StockOperationValidationError) {
         Object.entries(error.errors).forEach(([name, message]) => {

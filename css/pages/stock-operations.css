@@ -28,6 +28,28 @@
   gap: 1rem;
 }
 
+.stock-operation-form__hint,
+.stock-operation-form__preview {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.stock-operation-form__hint {
+  border-left: 0.25rem solid #6b9fdc;
+  background: #f3f7fc;
+  color: #526178;
+}
+
+.stock-operation-form__preview {
+  border: 1px solid #c9dbf3;
+  background: #f1f6fd;
+  color: #244f87;
+  font-weight: 750;
+}
+
 @media (max-width: 34rem) {
   .stock-operation-form__grid {
     grid-template-columns: 1fr;

@@ -28,6 +28,94 @@
   gap: 0.875rem;
 }
 
+.requisition-form,
+.receive-requisition-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.requisition-form__required-note {
+  margin: -0.125rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.requisition-form__required,
+.requisition-form__required-note span {
+  color: #b43340;
+  font-weight: 800;
+}
+
+.requisition-form__section {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #d6e0ec;
+  border-radius: var(--radius-md);
+  background: #fbfcfe;
+}
+
+.requisition-form__section legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.375rem;
+  color: #253c5b;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.requisition-form__step {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #e3efff;
+  color: #1d5baa;
+  font-size: 0.6875rem;
+}
+
+.requisition-form__section-hint {
+  margin: 0 0 0.875rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.requisition-form__selection,
+.requisition-receipt-summary,
+.requisition-receipt-warning {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.requisition-form__selection,
+.requisition-receipt-summary {
+  border: 1px solid #c9dbf3;
+  background: #f1f6fd;
+  color: #244f87;
+}
+
+.requisition-receipt-summary {
+  display: grid;
+  gap: 0.1875rem;
+}
+
+.requisition-receipt-summary span {
+  color: #526178;
+  font-size: 0.75rem;
+}
+
+.requisition-receipt-warning {
+  border-left: 0.25rem solid #d99a21;
+  background: #fff7e5;
+  color: #765114;
+}
+
 .field--wide {
   grid-column: 1 / -1;
 }
@@ -157,6 +245,16 @@
   font-size: 0.875rem;
 }
 
+.user-form__actions {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+}
+
+.administration-current-user {
+  align-self: center;
+  white-space: nowrap;
+}
+
 .cabinet-config-form {
   grid-template-columns: repeat(2, minmax(10rem, 1fr)) max-content;
   align-items: end;
@@ -245,6 +343,10 @@
 
   .field--wide,
   .cabinet-config-form .button {
+    grid-column: auto;
+  }
+
+  .user-form__actions {
     grid-column: auto;
   }
 

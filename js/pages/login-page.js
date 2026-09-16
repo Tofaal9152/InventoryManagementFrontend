@@ -11,13 +11,13 @@ export function destroyLoginPage() {
   loginController = null;
 }
 
-function field({ name, label, type, autocomplete }) {
+function field({ name, label, type, autocomplete, placeholder }) {
   const id = `login-${name}`;
   return `
     <div class="field">
       <label class="field__label" for="${id}">${label}</label>
       <input class="field__control" id="${id}" name="${name}" type="${type}" autocomplete="${autocomplete}"
-             aria-describedby="${id}-error" required>
+             placeholder="${placeholder}" aria-describedby="${id}-error" required>
       <span class="field__error" id="${id}-error"></span>
     </div>
   `;
@@ -42,8 +42,8 @@ export function renderLoginPage(container, { onSignedIn, reason = '' } = {}) {
         </p>
 
         <form class="login-form" novalidate data-login-form>
-          ${field({ name: 'email', label: 'Email address', type: 'email', autocomplete: 'username' })}
-          ${field({ name: 'password', label: 'Password', type: 'password', autocomplete: 'current-password' })}
+          ${field({ name: 'email', label: 'Email address', type: 'email', autocomplete: 'username', placeholder: 'you@example.com' })}
+          ${field({ name: 'password', label: 'Password', type: 'password', autocomplete: 'current-password', placeholder: 'Enter your password' })}
 
           <p class="login-form__error" role="alert" data-login-error hidden></p>
 

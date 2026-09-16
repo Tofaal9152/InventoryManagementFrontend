@@ -36,7 +36,15 @@
   display: contents;
 }
 
-.library-toolbar > .button {
+.library-toolbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: max-content;
+}
+
+.library-toolbar__actions .button {
   min-height: 2.75rem;
   white-space: nowrap;
 }
@@ -207,6 +215,91 @@
 .assignment-form {
   display: grid;
   gap: 1.25rem;
+}
+
+.component-form {
+  gap: 1rem;
+}
+
+.component-form__required-note {
+  margin: -0.125rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.component-form__required,
+.component-form__required-note span {
+  color: #b43340;
+  font-weight: 800;
+}
+
+.component-form__section {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #d6e0ec;
+  border-radius: var(--radius-md);
+  background: #fbfcfe;
+}
+
+.component-form__section legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.375rem;
+  color: #253c5b;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.component-form__step {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #e3efff;
+  color: #1d5baa;
+  font-size: 0.6875rem;
+}
+
+.component-form__section-hint {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.component-form__section .library-form-grid {
+  gap: 0.875rem 1rem;
+}
+
+.library-form-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.component-image-field {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 0.875rem;
+  border: 1px dashed #bdcce0;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.component-image-field__copy {
+  display: grid;
+  align-content: start;
+  gap: 0.375rem;
+}
+
+.component-image-field .component-image-preview {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.component-image-field .component-image-remove {
+  margin-top: 0.125rem;
 }
 
 .component-image-preview {
@@ -565,8 +658,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .library-toolbar > .button {
-    justify-self: start;
+  .library-toolbar__actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    justify-content: flex-end;
   }
 
   .library-search {
@@ -575,6 +670,10 @@
 
   .component-detail-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .library-form-grid--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -593,6 +692,7 @@
   }
 
   .library-form-grid,
+  .library-form-grid--three,
   .component-detail-columns,
   .component-facts,
   .component-price-facts {
@@ -602,6 +702,25 @@
   .library-search,
   .field--wide {
     grid-column: auto;
+  }
+
+  .library-toolbar__actions {
+    grid-column: auto;
+    min-width: 0;
+    justify-content: stretch;
+  }
+
+  .library-toolbar__actions .button {
+    flex: 1;
+  }
+
+  .component-image-field {
+    grid-template-columns: 1fr;
+  }
+
+  .component-image-field .component-image-preview {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .library-pagination {

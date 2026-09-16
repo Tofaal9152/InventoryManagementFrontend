@@ -4,6 +4,7 @@ import { mapMovement } from '../api/mappers/library.js';
 import {
   mapCurrentStockRow,
   mapDashboard,
+  mapDashboardConsumption,
   mapDrawerUtilisation,
   mapLowStockRow,
   mapProjectConsumption
@@ -44,9 +45,12 @@ export async function getDashboardData() {
     }));
 
     const summary = mapDashboard(dashboard);
+    const consumption = mapDashboardConsumption(dashboard);
     const recent = (dashboard?.recent_movements || []).map(mapMovement).map((movement) => ({
       ...movement,
-      component: movement.componentId ? { id: movement.componentId, name: movement.componentName } : null
+      component: movement.componentId
+        ? { id: movement.componentId, name: movement.componentName, unit: { symbol: movement.unitSymbol } }
+        : null
     }));
 
     return {
@@ -54,6 +58,8 @@ export async function getDashboardData() {
       // The dashboard tile counts chambers in use; total stock is not reported.
       totalStock: summary.chamberSummary.inUse,
       recentMovements: recent.length ? recent.slice(0, 5) : movements.slice(0, 5),
+      consumptionDays: consumption.days,
+      mostConsumedComponents: consumption.items,
       movements
     };
   }
@@ -66,6 +72,29 @@ export async function getDashboardData() {
   const movements = state.movements.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   const componentsById = new Map(components.map((component) => [component.id, component]));
   const resolvedMovements = movements.map((movement) => ({ ...movement, component: componentsById.get(movement.componentId) }));
+  const consumptionByComponent = new Map();
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  resolvedMovements.forEach((movement) => {
+    if (new Date(movement.timestamp).getTime() < cutoff || !movement.component) return;
+    const change = movement.type === 'Take' ? Number(movement.quantity) : movement.type === 'Return' ? -Number(movement.quantity) : 0;
+    const current = consumptionByComponent.get(movement.component.id) || { component: movement.component, quantityConsumed: 0 };
+    current.quantityConsumed += Number.isFinite(change) ? change : 0;
+    consumptionByComponent.set(movement.component.id, current);
+  });
+
+  const mostConsumedComponents = [...consumptionByComponent.values()]
+    .filter((entry) => entry.quantityConsumed > 0)
+    .sort((first, second) => second.quantityConsumed - first.quantityConsumed)
+    .slice(0, 5)
+    .map(({ component, quantityConsumed }) => ({
+      id: component.id,
+      name: component.name,
+      partNumber: component.partNumber,
+      unit: component.unit,
+      quantityConsumed
+    }));
+
   return {
     componentCount: components.length,
     totalStock,
@@ -74,7 +103,14 @@ export async function getDashboardData() {
     outOfStockCount: components.filter((component) => component.stockState === 'out').length,
     pendingRequisitionCount: state.requisitions.filter((requisition) => requisition.status === 'Pending').length,
     drawerUtilisation: drawers.length ? Math.round(drawers.filter((drawer) => drawer.componentId).length / drawers.length * 100) : 0,
+    chamberSummary: {
+      total: drawers.length,
+      inUse: drawers.filter((drawer) => drawer.componentId).length,
+      empty: drawers.filter((drawer) => !drawer.componentId).length
+    },
     recentMovements: resolvedMovements.slice(0, 5),
+    consumptionDays: 30,
+    mostConsumedComponents,
     movements: resolvedMovements
   };
 }

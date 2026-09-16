@@ -1,8 +1,12 @@
 .login-page {
   display: grid;
-  min-height: calc(100dvh - 4rem);
+  min-height: 100dvh;
   place-items: center;
-  padding: clamp(1rem, 4vw, 2.5rem) 0;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  background:
+    radial-gradient(circle at 18% 12%, #e2edff 0, rgb(226 237 255 / 0%) 28rem),
+    radial-gradient(circle at 84% 88%, #eaf5f1 0, rgb(234 245 241 / 0%) 24rem),
+    var(--color-background);
 }
 
 .login-card {
@@ -53,6 +57,11 @@
   font-size: 0.875rem;
 }
 
+/* The base notice uses flex; explicitly honour the native hidden attribute. */
+.login-card__notice[hidden] {
+  display: none;
+}
+
 .login-card__notice .icon {
   width: 1.0625rem;
   height: 1.0625rem;
@@ -62,7 +71,7 @@
 
 .login-form {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .login-form__error {
@@ -91,13 +100,24 @@ body.is-signed-out .sidebar-footer {
 }
 
 body.is-signed-out .app-shell {
-  grid-template-columns: 1fr;
+  display: block;
+  min-height: 100dvh;
 }
 
 body.is-signed-out .app-sidebar {
-  position: static;
-  min-height: auto;
-  padding: 1rem clamp(1rem, 4vw, 2rem);
+  display: none;
+}
+
+body.is-signed-out .app-frame,
+body.is-signed-out .main-content {
+  min-height: 100dvh;
+}
+
+body.is-signed-out .main-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .sidebar-account {
@@ -156,7 +176,6 @@ body.is-signed-out .app-sidebar {
 
 @media (max-width: 48rem) {
   .login-page {
-    min-height: auto;
-    padding-top: 1.5rem;
+    padding: 1rem;
   }
 }

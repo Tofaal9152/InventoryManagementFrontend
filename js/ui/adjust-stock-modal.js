@@ -1,5 +1,5 @@
 import { StockOperationValidationError, adjustStock } from '../services/inventory-service.js';
-import { clearFormErrors, setFieldError } from './form-fields.js';
+import { clearFieldErrorOnChange, clearFormErrors, setFieldError } from './form-fields.js';
 import { confirmAction } from './confirm-dialog.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -19,13 +19,14 @@ export function openAdjustStockModal({ cabinet, drawer, onAdjusted } = {}) {
   form.innerHTML = `
     <div class="stock-operation-form__grid">
       <div class="field">
-        <label class="field__label" for="adjust-quantity">Counted quantity (${escapeHtml(symbol)})</label>
+        <label class="field__label" for="adjust-quantity">Counted quantity (${escapeHtml(symbol)}) <span class="inventory-form__required" aria-hidden="true">*</span></label>
         <input class="field__control" id="adjust-quantity" name="quantity" type="number" min="0" step="0.001"
-               value="${drawer.quantity}" aria-describedby="adjust-quantity-error" required>
+               inputmode="decimal" value="${drawer.quantity}" aria-describedby="adjust-quantity-error" required>
+        <span class="field__hint">Enter the physical count, not the amount to add or remove.</span>
         <span class="field__error" id="adjust-quantity-error"></span>
       </div>
       <div class="field field--wide">
-        <label class="field__label" for="adjust-reason">Reason</label>
+        <label class="field__label" for="adjust-reason">Reason <span class="inventory-form__required" aria-hidden="true">*</span></label>
         <input class="field__control" id="adjust-reason" name="note" type="text"
                placeholder="Physical count found 2 missing" aria-describedby="adjust-reason-error" required>
         <span class="field__error" id="adjust-reason-error"></span>
@@ -34,6 +35,7 @@ export function openAdjustStockModal({ cabinet, drawer, onAdjusted } = {}) {
     <p class="stock-operation-form__hint">
       System quantity is ${formatQuantity(drawer.quantity, symbol)}. The difference is recorded in the audit log.
     </p>
+    <p class="stock-operation-form__preview" data-adjustment-preview aria-live="polite"></p>
     <div class="dialog__actions">
       <button class="button button--secondary" type="button" data-adjust-cancel>${renderIcon('close')}Cancel</button>
       <button class="button" type="submit">${renderIcon('check')}Adjust stock</button>
@@ -47,6 +49,21 @@ export function openAdjustStockModal({ cabinet, drawer, onAdjusted } = {}) {
   });
 
   form.querySelector('[data-adjust-cancel]').addEventListener('click', () => modal.close('cancelled'));
+  clearFieldErrorOnChange(form);
+  const adjustmentPreview = form.querySelector('[data-adjustment-preview]');
+  const updateAdjustmentPreview = () => {
+    const counted = Number(form.elements.quantity.value);
+    if (!Number.isFinite(counted) || counted < 0) {
+      adjustmentPreview.textContent = 'Enter a non-negative physical count to preview the adjustment.';
+      return;
+    }
+    const difference = counted - drawer.quantity;
+    adjustmentPreview.textContent = difference === 0
+      ? 'No adjustment will be made because this matches the system quantity.'
+      : `This will ${difference > 0 ? 'add' : 'remove'} ${formatQuantity(Math.abs(difference), symbol)}.`;
+  };
+  form.elements.quantity.addEventListener('input', updateAdjustmentPreview);
+  updateAdjustmentPreview();
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

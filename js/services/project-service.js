@@ -106,6 +106,42 @@ export async function createProject({ name, description = '', status = 'Active' 
   return getProjectDetails(id);
 }
 
+/** Projects may be renamed or described; status changes have dedicated close/reopen endpoints. */
+export async function updateProject({ id, name, description = '' }) {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) throw new ProjectValidationError({ name: 'Project name is required.' });
+
+  if (APP_CONFIG.mode !== 'demo') {
+    try {
+      const dto = await apiRequest(`projects/${encodeURIComponent(id)}/`, {
+        method: 'PATCH',
+        body: { name: trimmed, description: String(description || '').trim() }
+      });
+      return mapProject(dto);
+    } catch (error) {
+      if (error?.name === 'ApiRequestError' && error.isValidationError) {
+        const fields = error.fields || {};
+        throw new ProjectValidationError({
+          name: fields.name || '',
+          description: fields.description || '',
+          form: Object.keys(fields).length ? '' : error.message
+        });
+      }
+      throw error;
+    }
+  }
+
+  throw new Error('Editing projects is only available against the backend.');
+}
+
+/** The server protects a project that is referenced by movements or requisitions. */
+export async function deleteProject(projectId) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Deleting projects is only available against the backend.');
+  }
+  return apiRequest(`projects/${encodeURIComponent(projectId)}/`, { method: 'DELETE' });
+}
+
 export async function listProjectSummaries() {
   if (APP_CONFIG.mode !== 'demo') {
     // The list rows carry no consumption, so each card's spend comes from its detail.

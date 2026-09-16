@@ -110,3 +110,19 @@ export function mapDashboard(dto) {
     }
   };
 }
+
+/** The dashboard reports net stock taken in the requested reporting period. */
+export function mapDashboardConsumption(dto) {
+  const consumption = dto?.most_consumed_components || {};
+
+  return {
+    days: toNumber(consumption.days, 30),
+    items: (consumption.results || []).map((row) => ({
+      id: toId(row?.component?.id),
+      name: row?.component?.name || 'Component',
+      partNumber: row?.component?.part_number || '',
+      unit: { symbol: row?.component?.unit_symbol || '' },
+      quantityConsumed: toNumber(row?.quantity_consumed)
+    }))
+  };
+}

@@ -1,5 +1,5 @@
 import { CabinetValidationError, createCabinet, getInventoryWorkspace } from '../services/inventory-service.js';
-import { clearFormErrors, setFieldError } from './form-fields.js';
+import { clearFieldErrorOnChange, clearFormErrors, setFieldError } from './form-fields.js';
 import { confirmAction } from './confirm-dialog.js';
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -27,9 +27,10 @@ export async function openCreateCabinetModal({ onCreated } = {}) {
   form.innerHTML = `
     <div class="cabinet-create-form__grid">
       <div class="field field--wide">
-        <label class="field__label" for="cabinet-name">Cabinet name</label>
+        <label class="field__label" for="cabinet-name">Cabinet name <span class="inventory-form__required" aria-hidden="true">*</span></label>
         <input class="field__control" id="cabinet-name" name="name" type="text" maxlength="80" autocomplete="off"
-               value="${escapeHtml(existing?.name || '')}" aria-describedby="cabinet-name-error" required>
+               value="${escapeHtml(existing?.name || '')}" placeholder="e.g. Main workshop cabinet" aria-describedby="cabinet-name-error" required>
+        <span class="field__hint">Use a location-based name that everyone recognises.</span>
         <span class="field__error" id="cabinet-name-error"></span>
       </div>
       ${live ? '' : `
@@ -42,16 +43,19 @@ export async function openCreateCabinetModal({ onCreated } = {}) {
         <span class="field__error" id="cabinet-group-error"></span>
       </div>`}
       <div class="field">
-        <label class="field__label" for="cabinet-rows">Rows</label>
-        <input class="field__control" id="cabinet-rows" name="rows" type="number" min="1" max="9" step="1" value="${existing?.rows || 4}" aria-describedby="cabinet-rows-error" required>
+        <label class="field__label" for="cabinet-rows">Rows <span class="inventory-form__required" aria-hidden="true">*</span></label>
+        <input class="field__control" id="cabinet-rows" name="rows" type="number" min="1" max="9" step="1" inputmode="numeric" value="${existing?.rows || 4}" aria-describedby="cabinet-rows-error" required>
+        <span class="field__hint">1 to 9 horizontal levels.</span>
         <span class="field__error" id="cabinet-rows-error"></span>
       </div>
       <div class="field">
-        <label class="field__label" for="cabinet-columns">Columns</label>
-        <input class="field__control" id="cabinet-columns" name="columnCount" type="number" min="1" max="26" step="1" value="${existing?.columnCount || 4}" aria-describedby="cabinet-columns-error" required>
+        <label class="field__label" for="cabinet-columns">Columns <span class="inventory-form__required" aria-hidden="true">*</span></label>
+        <input class="field__control" id="cabinet-columns" name="columnCount" type="number" min="1" max="26" step="1" inputmode="numeric" value="${existing?.columnCount || 4}" aria-describedby="cabinet-columns-error" required>
+        <span class="field__hint">1 to 26 vertical positions, labelled A to Z.</span>
         <span class="field__error" id="cabinet-columns-error"></span>
       </div>
     </div>
+    <div class="inventory-form__preview" data-cabinet-layout-preview aria-live="polite"></div>
     <p class="cabinet-create-form__hint">Drawer labels are generated automatically, such as A1, B1, A2 and B2.</p>
     <div class="dialog__actions">
       <button class="button button--secondary" type="button" data-cabinet-cancel>${renderIcon('close')}Cancel</button>
@@ -68,6 +72,18 @@ export async function openCreateCabinetModal({ onCreated } = {}) {
   });
 
   form.querySelector('[data-cabinet-cancel]').addEventListener('click', () => modal.close('cancelled'));
+  clearFieldErrorOnChange(form);
+  const layoutPreview = form.querySelector('[data-cabinet-layout-preview]');
+  const updateLayoutPreview = () => {
+    const rows = Number(form.elements.rows.value);
+    const columns = Number(form.elements.columnCount.value);
+    layoutPreview.textContent = Number.isInteger(rows) && Number.isInteger(columns) && rows > 0 && columns > 0
+      ? `${rows} rows × ${columns} columns = ${rows * columns} drawer${rows * columns === 1 ? '' : 's'}.`
+      : 'Enter whole numbers for the cabinet dimensions.';
+  };
+  form.elements.rows.addEventListener('input', updateLayoutPreview);
+  form.elements.columnCount.addEventListener('input', updateLayoutPreview);
+  updateLayoutPreview();
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const submitButton = form.querySelector('[type="submit"]');

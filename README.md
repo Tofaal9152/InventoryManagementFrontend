@@ -1,1 +1,1 @@
-# InventoryManagementFrontend
+Just ```npm start``` in the terminal to run the frontend server.

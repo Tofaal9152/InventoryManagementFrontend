@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../config.js';
-import { apiRequest, buildUrl } from '../api/client.js';
+import { apiRequest } from '../api/client.js';
 import { toNumber } from '../api/mappers/library.js';
 
 /** Uploads, exports and the two-step import. All multipart or binary. */
@@ -90,9 +90,27 @@ export async function downloadExport(path, { params = {}, format = 'xlsx', filen
   return blob.size;
 }
 
-/** Opens the printable label sheet, which the backend returns as HTML. */
-export function labelSheetUrl(params = {}) {
-  return buildUrl('inventory/labels/', params);
+/**
+ * Opens the printable label sheet after loading it with the current JWT.
+ * A plain link cannot pass the authorization header from localStorage, so the
+ * backend would reject a direct browser navigation with HTTP 401.
+ */
+export async function openLabelSheet(params = {}) {
+  requireLiveMode();
+  const labelWindow = window.open('', '_blank');
+  if (!labelWindow) throw new FileTransferError('Allow pop-ups to open the label sheet.');
+
+  try {
+    const response = await apiRequest('inventory/labels/', { params, raw: true });
+    const html = await response.text();
+    labelWindow.document.open();
+    labelWindow.document.write(html);
+    labelWindow.document.close();
+    labelWindow.opener = null;
+  } catch (error) {
+    labelWindow.close();
+    throw error;
+  }
 }
 
 function importForm(file, columnMapping) {

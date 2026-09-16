@@ -33,7 +33,9 @@ export function mapCategory(dto) {
   return {
     id: toId(dto.id),
     name: dto.name || '',
-    componentCount: toNumber(dto.component_count, 0)
+    description: dto.description || '',
+    componentCount: toNumber(dto.component_count, 0),
+    totalQuantity: toNumber(dto.total_quantity, 0)
   };
 }
 

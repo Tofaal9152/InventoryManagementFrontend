@@ -288,6 +288,14 @@ export async function setComponentArchived(componentId, archived) {
   return mapComponent(dto?.data || dto);
 }
 
+/** A component may be permanently deleted only before it has stock or history. */
+export async function deleteComponent(componentId) {
+  if (APP_CONFIG.mode === 'demo') {
+    throw new Error('Deleting components is only available against the backend.');
+  }
+  return apiRequest(`library/components/${encodeURIComponent(componentId)}/`, { method: 'DELETE' });
+}
+
 export async function saveComponent(input) {
   if (APP_CONFIG.mode !== 'demo') {
     return saveComponentLive(input);

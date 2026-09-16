@@ -86,6 +86,13 @@ async function send(path, { method, body, headers, params, fetcher, withAuth }) 
   const sendsJson = body !== undefined && !isFormData(body);
   if (sendsJson) requestHeaders.set('Content-Type', 'application/json');
 
+  // ngrok's free tunnel shows an HTML warning page to browser XHR requests
+  // unless this header is present. The frontend proxy keeps these calls
+  // same-origin, so this does not require a CORS preflight.
+  if (globalThis.location?.hostname?.endsWith('.ngrok-free.dev')) {
+    requestHeaders.set('ngrok-skip-browser-warning', 'true');
+  }
+
   if (withAuth) {
     const token = getAccessToken();
     if (token) requestHeaders.set('Authorization', `Bearer ${token}`);
